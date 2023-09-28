@@ -16,9 +16,9 @@ public class KarelProgramSample extends SuperKarel {
 	@Override
 	public void run() {
 		moveToBeeper();
-		pickBeeper();
+		pickBeepers();
 		moveToTarget();
-		putBeeper();
+		putBeepers();
 		
 	}
 	
@@ -30,10 +30,13 @@ public class KarelProgramSample extends SuperKarel {
 	}
 
 	private void pickBeepers(){
-		for(int i=0; i<10; i++){pickBeeper();
-	}}
+		
+		for(int i=0; i<10; i++){
+			pickBeeper();
+		}
+	}
 	
-	private void pickBeepers(){
+	private void putBeepers(){
 		for(int b=0; b<10; b++){putBeeper();
 	}}
 	
