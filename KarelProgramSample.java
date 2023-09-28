@@ -25,8 +25,18 @@ public class KarelProgramSample extends SuperKarel {
 	private void moveToBeeper(){
 		move();
 		move();
+		move();
+		move();
 	}
 
+	private void pickBeepers(){
+		for(int i=0; i<10; i++){pickBeeper();
+	}}
+	
+	private void pickBeepers(){
+		for(int b=0; b<10; b++){putBeeper();
+	}}
+	
 	private void moveToTarget(){
 		move();
 	}
