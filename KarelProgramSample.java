@@ -28,7 +28,9 @@ public class KarelProgramSample extends SuperKarel {
 	
 	private void moveToWall() {
 		 while (frontIsClear()) {
-		 move();
+			 putBeeper();
+			 move();
+		 
 		 }
 		} 
 
