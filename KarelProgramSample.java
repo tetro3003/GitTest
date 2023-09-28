@@ -35,6 +35,9 @@ public class KarelProgramSample extends SuperKarel {
 			 move();
 		 }
 		 putBeeper();
+		 if(frontIsClear());
+		 else turnLeft();
+		 
 		} 
 
 	private void pickBeepers(){
