@@ -15,8 +15,8 @@ public class KarelProgramSample extends SuperKarel {
 	
 	@Override
 	public void run() {
-		moveToWall();
-		putBeeper();
+		fillRoad();
+		
 		
 	 
 		
@@ -29,12 +29,12 @@ public class KarelProgramSample extends SuperKarel {
 		move();
 	}
 	
-	private void moveToWall() {
+	private void fillRoad() {
 		 while (frontIsClear()) {
-			 if(noBeepersPresent()==true){putBeeper();}
+			 if(noBeepersPresent()){putBeeper();}
 			 move();
-		 
 		 }
+		 putBeeper();
 		} 
 
 	private void pickBeepers(){
