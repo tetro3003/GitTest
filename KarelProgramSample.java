@@ -33,10 +33,11 @@ public class KarelProgramSample extends SuperKarel {
 		 while (frontIsClear()) {
 			 if(noBeepersPresent()){putBeeper();}
 			 move();
+			 if(frontIsClear());
+			 else turnLeft();
 		 }
 		 putBeeper();
-		 if(frontIsClear());
-		 else turnLeft();
+		 
 		 
 		} 
 
