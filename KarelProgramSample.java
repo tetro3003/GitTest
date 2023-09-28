@@ -17,7 +17,7 @@ public class KarelProgramSample extends SuperKarel {
 	public void run() {
 		moveToWall();
 		putBeeper();
-		move();
+		
 	 
 		
 	}
@@ -31,7 +31,7 @@ public class KarelProgramSample extends SuperKarel {
 	
 	private void moveToWall() {
 		 while (frontIsClear()) {
-			 putBeeper();
+			 if(noBeepersPresent()==true){putBeeper();}
 			 move();
 		 
 		 }
