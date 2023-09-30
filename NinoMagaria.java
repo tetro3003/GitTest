@@ -1,4 +1,6 @@
+import stanford.karel.Karel;
 
-public class NinoMagaria {
+public class NinoMagaria extends Karel{
+	
 
 }
