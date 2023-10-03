@@ -29,6 +29,25 @@ public class KarelProgramSample extends SuperKarel {
 		move();
 	}
 	
+	private void pickAndPutBeepers(){
+		int a;
+		int b;
+		move();
+		 while (beepersPresent()){
+			pickBeeper();
+			a=+1;
+		}
+		 move();
+		 while (beepersPresent()){
+				pickBeeper();
+				b=+1;
+			}
+		 move();
+		 for(int c=0; c<a+b; c++){
+			 putBeeper();
+		 }
+	}
+	
 	private void fillRoad() {
 		 while (frontIsClear()) {
 			 if(noBeepersPresent()){putBeeper();}
