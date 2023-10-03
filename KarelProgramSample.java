@@ -53,7 +53,7 @@ public class KarelProgramSample extends SuperKarel {
 								for(c = 0; c<d; c++){
 									putBeeper();
 									}
-								k=1;
+								move();
 								break;
 						}
 				}
