@@ -15,9 +15,8 @@ public class KarelProgramSample extends SuperKarel {
 	
 	@Override
 	public void run() {
-		fillRoad();
 		
-		
+		pickAndPutBeepers();
 	 
 		
 	}
