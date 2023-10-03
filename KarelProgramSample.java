@@ -49,9 +49,8 @@ public class KarelProgramSample extends SuperKarel {
 				if(noBeepersPresent()){
 					move();
 				for(c = 0; c<d; c++){putBeeper();}
-				
-				}
 				break;
+				}else break;
 			}
 		}
 		 }
