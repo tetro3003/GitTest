@@ -31,20 +31,24 @@ public class KarelProgramSample extends SuperKarel {
 	private void pickAndPutBeepers(){
 		int a;
 		int b;
+		int c;
 		move();
 		 while (beepersPresent()){
 			pickBeeper();
 			a=+1;
-		}
-		 move();
-		 while (beepersPresent()){
+			
+			if(noBeepersPresent()){
+				move();
+				while (beepersPresent()){
+			}
 				pickBeeper();
 				b=+1;
+				if(noBeepersPresent){move();
+				for(c = 0; c<a+b; c++){putBeeper();}}
 			}
-		 move();
-		 for(int c=0; c<a+b; c++){
-			 putBeeper();
-		 }
+		}
+		 
+		
 	}
 	
 	private void fillRoad() {
