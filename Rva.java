@@ -22,12 +22,12 @@ private void minus(){
 	
 	while(beepersPresent()){
 		a=a+1;
-		if(noBeepersPresent()) break;
+		pickBeeper();
 	}
 	move();
 	while(beepersPresent()){
 		b = b+1;
-		if(noBeepersPresent()) break;
+		pickBeeper();
 	}
 	move();
 	for(int c=0; c<a-b; c++){
