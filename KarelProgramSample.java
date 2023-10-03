@@ -32,6 +32,7 @@ public class KarelProgramSample extends SuperKarel {
 		int a;
 		int b;
 		int c;
+		int d;
 		move();
 		 while (beepersPresent()){
 			pickBeeper();
@@ -43,9 +44,11 @@ public class KarelProgramSample extends SuperKarel {
 			
 				pickBeeper();
 				b=+1;
+				
+				d=b+a;
 				if(noBeepersPresent()){
 					move();
-				for(c = 0; c<a+b; c++){putBeeper();}
+				for(c = 0; c<d; c++){putBeeper();}
 				break;
 				}
 			}
