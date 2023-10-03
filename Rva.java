@@ -30,7 +30,7 @@ private void minus(){
 		pickBeeper();
 	}
 	move();
-	for(int c=0; c<a-b; c++){
+	for(int c=0; c<a*b; c++){
 		putBeeper();
 	}
 	move();
