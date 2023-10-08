@@ -6,7 +6,7 @@ public class FirstToEighth extends SuperKarel {
 	@Override
 	public void run(){
 	
-		fifth();
+		sixth();
 	
 	}
 	
@@ -88,8 +88,47 @@ public class FirstToEighth extends SuperKarel {
 			} else move();
 				
 		}
+		
+		putBeeper();
 	 
-		// run-ში გამოვიძახებთ მეთოდს fourth()
+		// run-ში გამოვიძახებთ მეთოდს fifth()
+		
+	}
+	
+	private void sixth(){
+		
+		move();
+		
+		while(noBeepersPresent()){
+			pickBeeper();
+			move();
+			move();
+			putBeeper();
+			turnLeft();
+			turnLeft();
+			move();
+			move();
+			turnLeft();
+			turnLeft();
+		} //2*1 წერტილიდან აიღებს ბიპერებს იქამდე სანამ ბიპერი იქნება 2*1ზე და გადაიტანს 4*1ზე
+		
+		move();
+		
+		while(noBeepersPresent()){
+			pickBeeper();
+			move();
+			putBeeper();
+			turnLeft();
+			turnLeft();
+			move();
+			turnLeft();
+			turnLeft();
+		}//3*1 წერტილიდან აიღებს ბიპერებს იქამდე სანამ ბიპერი იქნება 3*1ზე და გადაიტანს 4*1ზე
+		
+		move();
+		move();
+		
+		// run-ში გამოვიძახებთ მეთოდს sixth()
 		
 	}
 
