@@ -155,6 +155,6 @@ public class FirstToEighth extends Karel {
 	 
 		// run-ში გამოვიძახებთ მეთოდს seventh()
 		
-	}
+	
 	
 }
