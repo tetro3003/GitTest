@@ -13,13 +13,6 @@ public class KarelProgramSample extends SuperKarel {
 
 	// You fill in this part
 	
-	@Override
-	public void run() {
-		
-		pickAndPutBeepers();
-	 
-		
-	}
 	
 	private void moveToBeeper(){
 		
