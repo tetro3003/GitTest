@@ -5,8 +5,8 @@ public class FirstToEighth extends SuperKarel {
 
 	@Override
 	public void run(){
-	
-		sixth();
+
+		
 	
 	}
 	
