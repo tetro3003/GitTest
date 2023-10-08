@@ -1,7 +1,7 @@
 import stanford.karel.SuperKarel;
 import stanford.karel.*;
 
-public class FirstToEighth extends SuperKarel {
+public class FirstToEighth extends Karel {
 
 	@Override
 	public void run(){
