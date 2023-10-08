@@ -3,6 +3,7 @@ import stanford.karel.*;
 
 public class FirstToEighth extends SuperKarel {
 
+	@Override
 	public void run(){
 	
 	third();
