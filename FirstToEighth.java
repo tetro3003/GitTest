@@ -6,7 +6,7 @@ public class FirstToEighth extends SuperKarel {
 	@Override
 	public void run(){
 	
-		fourth();
+		fifth();
 	
 	}
 	
@@ -68,6 +68,25 @@ public class FirstToEighth extends SuperKarel {
 		while(frontIsClear()){
 			move();
 			putBeeper();
+		}
+	 
+		// run-ში გამოვიძახებთ მეთოდს fourth()
+		
+	}
+	
+	private void fifth(){
+		
+		if(noBeepersPresent()) {
+			putBeeper(); 
+			move();
+			} else move();
+		
+		while(frontIsClear()){
+			if(noBeepersPresent()) {
+				putBeeper(); 
+				move();
+			} else move();
+				
 		}
 	 
 		// run-ში გამოვიძახებთ მეთოდს fourth()
