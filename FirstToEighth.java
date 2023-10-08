@@ -6,7 +6,7 @@ public class FirstToEighth extends Karel {
 	@Override
 	public void run(){
 
-		fifth();
+		sixth();
 	
 	}
 	
