@@ -132,4 +132,12 @@ public class FirstToEighth extends Karel {
 		
 	}
 
+	private void seventh(){
+		
+		
+	 
+		// run-ში გამოვიძახებთ მეთოდს seventh()
+		
+	}
+	
 }
