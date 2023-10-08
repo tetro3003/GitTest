@@ -142,7 +142,7 @@ public class FirstToEighth extends Karel {
 				move();
 			} else move();
 		}
-		}
+		
 		turnLeft();
 		move();
 		turnLeft();
@@ -161,7 +161,7 @@ public class FirstToEighth extends Karel {
 		turnLeft();
 		turnLeft();
 		turnLeft();
-		
+		}
 		
 	}
 		// run-ში გამოვიძახებთ მეთოდს seventh()	 			
