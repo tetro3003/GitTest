@@ -134,45 +134,36 @@ public class FirstToEighth extends Karel {
 
 	private void seventh(){
 		
-		while (frontIsClear()) {
-			 if(noBeepersPresent()){putBeeper();}
-			 move();
-			 if(beepersPresent()){
-				 turnLeft();
-				 turnLeft();
-				 move();
-				 turnLeft();
-				 turnLeft();
-				 turnLeft();
-			 }
-			 if(frontIsClear());
-			 else {
-				 turnLeft(); 
-				 move();
-				 if(beepersPresent()){
-					 
-					 turnLeft();
-					 turnLeft();
-					 turnLeft();
-					 move();
-					 turnLeft();
-					 turnLeft();
-					 turnLeft();
-					 move();
-					 turnLeft();
-					 turnLeft();
-					 turnLeft();
-					 move();
-					 turnLeft();
-					 turnLeft();
-					 turnLeft();
-					 
-				 }
-			 }
-			 
-		 }
-		 putBeeper();
-		 
+		
+	for(int i=0; i<1000; i++){	
+		while(frontIsClear()) {
+			if(noBeepersPresent()){
+				putBeeper();
+				move();
+			} else move();
+			
+		}
+		turnLeft();
+		move();
+		turnLeft();
+		for(int v=0; v<1000; v++){	
+			while(frontIsClear()) {
+				if(noBeepersPresent()){
+					putBeeper();
+					move();
+				} else move();
+				
+			}
+		turnLeft();
+		turnLeft();
+		turnLeft();
+		move();
+		turnLeft();
+		turnLeft();
+		turnLeft();
+		
+		
+	}
 		// run-ში გამოვიძახებთ მეთოდს seventh()	 			
 	}
 	 
