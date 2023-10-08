@@ -6,7 +6,7 @@ public class FirstToEighth extends Karel {
 	@Override
 	public void run(){
 
-		seventh();
+		eightth();
 	
 	}
 	
@@ -135,19 +135,68 @@ public class FirstToEighth extends Karel {
 	private void seventh(){
 		
 		while (frontIsClear()) {
-			 if(noBeepersPresent()){
-				 putBeeper();
+			 if(noBeepersPresent()){putBeeper();}
+			 move();
+			 if(beepersPresent()){
+				 turnLeft();
+				 turnLeft();
 				 move();
-			}
-			 else move(); 
-			 
+				 turnLeft();
+				 turnLeft();
+				 turnLeft();
+			 }
 			 if(frontIsClear());
 			 else turnLeft();
+			 
 		 }
-		 			
+		 putBeeper();
+		 
+		// run-ში გამოვიძახებთ მეთოდს seventh()	 			
 	}
 	 
-		// run-ში გამოვიძახებთ მეთოდს seventh()
+private void eightth(){
+		
+		move();
+		move();
+		
+		while(beepersPresent()){
+			pickBeeper();
+			turnLeft();
+			turnLeft();
+			move();
+			pickBeeper();
+			turnLeft();
+			turnLeft();
+			move();
+			
+		} //3*1 წერტილიდან აიღებს ბიპერებს იქამდე სანამ ბიპერი იქნება 3*1ზე და ამ რაოდენობის ბიპერებს აიღებს 2*1დანაც
+		
+		turnLeft();
+		turnLeft();
+		move();
+		turnLeft();
+		turnLeft();
+		
+		while(beepersPresent()){
+			pickBeeper();
+			move();
+			move();
+			putBeeper();
+			turnLeft();
+			turnLeft();
+			move();
+			move();
+			turnLeft();
+			turnLeft();
+			
+		}//2*1 წერტილიდან აიღებს ბიპერებს იქამდე სანამ ბიპერი იქნება 2*1ზე და გადაიტანს 4*1ზე
+		
+		move();
+		move();
+		
+		// run-ში გამოვიძახებთ მეთოდს eightth()
+		
+	}
 		
 	
 	
