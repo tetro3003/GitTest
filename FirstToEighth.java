@@ -1,4 +1,5 @@
 import stanford.karel.SuperKarel;
+import stanford.karel.*;
 
 public class FirstToEighth extends SuperKarel {
 
