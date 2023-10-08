@@ -6,7 +6,7 @@ public class FirstToEighth extends Karel {
 	@Override
 	public void run(){
 
-		eightth();
+		seventh();
 	
 	}
 	
@@ -146,7 +146,29 @@ public class FirstToEighth extends Karel {
 				 turnLeft();
 			 }
 			 if(frontIsClear());
-			 else turnLeft();
+			 else {
+				 turnLeft(); 
+				 move();
+				 if(beepersPresent()){
+					 
+					 turnLeft();
+					 turnLeft();
+					 turnLeft();
+					 move();
+					 turnLeft();
+					 turnLeft();
+					 turnLeft();
+					 move();
+					 turnLeft();
+					 turnLeft();
+					 turnLeft();
+					 move();
+					 turnLeft();
+					 turnLeft();
+					 turnLeft();
+					 
+				 }
+			 }
 			 
 		 }
 		 putBeeper();
