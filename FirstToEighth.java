@@ -234,9 +234,11 @@ public class FirstToEighth extends Karel {
 				move();
 			
 			}
+			turnLeft();
+			turnLeft();
 			move();
 			move();
-			
+			move();
 		}
 	 
 		// run-ში გამოვიძახებთ მეთოდს ninth()
