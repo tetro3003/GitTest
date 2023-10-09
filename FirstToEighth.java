@@ -294,9 +294,29 @@ public class FirstToEighth extends Karel {
 					turnLeft();
 					move();
 					move();
-				
+					if(noBeepersPresent()){
+						turnLeft();
+						turnLeft();
+						move();
+						move();
+						turnLeft();
+						turnLeft();
+						break;
+					}
+					
 					}
 				
+				}
+			
+				if(beepersPresent()){
+					pickBeeper();
+					if(noBeepersPresent()){
+						
+						move();
+						move();
+						if(noBeepersPresent()) break;
+						
+					}
 				}
 			
 			}
