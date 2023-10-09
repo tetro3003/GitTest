@@ -311,4 +311,3 @@ public class FirstToEighth extends Karel {
 	}
 	
 	
-}
