@@ -241,6 +241,12 @@ public class FirstToEighth extends Karel {
 			move();
 			turnLeft();
 			turnLeft();
+			if(noBeepersPresent()){
+				move();
+				while(beepersPresent()){
+					pickBeeper();
+				} 
+			}
 		}
 	 
 		// run-ში გამოვიძახებთ მეთოდს ninth()
