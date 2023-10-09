@@ -302,37 +302,16 @@ public class FirstToEighth extends Karel {
 						turnLeft();
 						turnLeft();
 						break;
-					}
+						}
 					
 					}
 				
 				}
 			
-				if(beepersPresent()){
-					pickBeeper();
-					if(noBeepersPresent()){
-						
-						move();
-						move();
-						if(noBeepersPresent()) break;
-						else {
-							turnLeft();
-							turnLeft();
-							move();
-							move();
-							turnLeft();
-							turnLeft();
-							putBeeper();
-						}
-						
-					}
-				}
-			
 			}
+			// run-ში გამოვიძახებთ მეთოდს tenth()
 			
 		}
-	 
-		// run-ში გამოვიძახებთ მეთოდს tenth()
 		
 	}
 	
