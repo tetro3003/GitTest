@@ -6,7 +6,7 @@ public class FirstToEighth extends Karel {
 	@Override
 	public void run(){
 
-		ninth();
+		tenth();
 	
 	}
 	
@@ -250,10 +250,37 @@ public class FirstToEighth extends Karel {
 		}
 	 
 		// run-ში გამოვიძახებთ მეთოდს ninth()
-		
 	}
 	
+	private void tenth(){
 		
+		move();
+		move();
+		
+		while(beepersPresent()){
+			
+			pickBeeper();
+			move();
+			move();
+			putBeeper();
+			turnLeft();
+			turnLeft();
+			move();
+			move();
+			move();
+			turnLeft();
+			turnLeft();
+			move();
+			if(noBeepersPresent()){
+				move();
+				putBeeper();
+			}
+			
+		}
+	 
+		// run-ში გამოვიძახებთ მეთოდს tenth()
+		
+	}
 	
 	
 }
