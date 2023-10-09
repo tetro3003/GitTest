@@ -257,7 +257,6 @@ public class FirstToEighth extends Karel {
 		move();
 		move();
 		
-		while(beepersPresent()){
 			while(beepersPresent()){
 		
 			
@@ -308,6 +307,6 @@ public class FirstToEighth extends Karel {
 		// run-ში გამოვიძახებთ მეთოდს tenth()
 		
 	}
-		// run-ში გამოვიძახებთ მეთოდს tenth()
-	}
+	
+	
 }
