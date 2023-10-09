@@ -299,8 +299,7 @@ public class FirstToEighth extends Karel {
 						turnLeft();
 						move();
 						move();
-						turnLeft();
-						turnLeft();
+						
 					}
 				}
 			}
