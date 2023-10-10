@@ -4,6 +4,7 @@ public class StoneMasonKarel extends Karel {
 	
 	public void run(){
 		
+		turnLeft();
 		rebuilder();
 		
 	}
@@ -12,7 +13,7 @@ public class StoneMasonKarel extends Karel {
 		
 		while(frontIsClear()){
 			
-			turnLeft();
+		
 			while(frontIsClear()){
 				if(noBeepersPresent()) {
 					putBeeper();
