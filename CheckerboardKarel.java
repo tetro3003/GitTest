@@ -55,4 +55,3 @@ public class CheckerboardKarel extends Karel{
 }
 }
 	}
-}
