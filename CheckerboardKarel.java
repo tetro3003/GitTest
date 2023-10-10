@@ -28,16 +28,17 @@ public class CheckerboardKarel extends Karel{
 							move();
 							if(frontIsClear()) {
 								move();
-							}	 else {
-						turnLeft();
-						turnLeft();
-						move();
-						move();
-						turnLeft();
-						turnLeft();
-						turnLeft();
+							}	 
 					}
 				}
+					else {
+						turnLeft();
+						turnLeft();
+						move();
+						move();
+						turnLeft();
+						turnLeft();
+						turnLeft();
 		
 			}
 			
