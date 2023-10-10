@@ -13,7 +13,7 @@ public class StoneMasonKarel extends Karel {
 	
 	while(frontIsClear()){
 		
-		
+		turnLeft();
 	
 		while(frontIsClear()){
 			
