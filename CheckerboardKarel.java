@@ -26,10 +26,9 @@ public class CheckerboardKarel extends Karel{
 							
 							putBeeper();
 							move();
-							if(frontIsClear()) move();
-							
-						
-					} else {
+							if(frontIsClear()) {
+								move();
+							}	 else {
 						turnLeft();
 						turnLeft();
 						move();
@@ -45,6 +44,8 @@ public class CheckerboardKarel extends Karel{
 		
 		}
 
-	}
+	
 }
+}
+	}
 }
