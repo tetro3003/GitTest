@@ -5,16 +5,13 @@ import stanford.karel.Karel;
 public class CollectNewspaperKarel extends Karel {
 	
 	public void run(){
-		
 		wayToBeeper();
 		pickBeeper();
 		backHome();
-		
 	}
 
 	
-	private void wayToBeeper(){
-		
+	private void wayToBeeper(){		
 		move();
 		move();
 		turnLeft();
@@ -23,10 +20,8 @@ public class CollectNewspaperKarel extends Karel {
 		move();
 		turnLeft();
 		move();
-		
 	}
-	private void backHome(){
-		
+	private void backHome(){	
 		turnLeft();
 		turnLeft();
 		move();
@@ -38,9 +33,7 @@ public class CollectNewspaperKarel extends Karel {
 		move();
 		turnLeft();
 		turnLeft();
-		turnLeft();
-		
-		
+		turnLeft();	
 	}
 	
 }
