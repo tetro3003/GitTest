@@ -21,7 +21,8 @@ public class StoneMasonKarel extends Karel {
 					putBeeper();
 					move();
 					
-		}else move();
+		}else if(frontIsClear())move();
+		else putBeeper();
 	
 	}
 		turnLeft();
