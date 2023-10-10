@@ -28,7 +28,7 @@ public class CheckerboardKarel extends Karel{
 							move();
 							if(frontIsClear()) move();
 							
-						}
+						
 					} else {
 						turnLeft();
 						turnLeft();
@@ -46,4 +46,5 @@ public class CheckerboardKarel extends Karel{
 		}
 
 	}
+}
 }
