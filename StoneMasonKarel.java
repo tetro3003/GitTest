@@ -13,22 +13,13 @@ public class StoneMasonKarel extends Karel {
 		
 		while(frontIsClear()){
 			
-		
-			while(frontIsClear()){
 				if(noBeepersPresent()) {
 					putBeeper();
-					}
-				turnLeft();
-				turnLeft();
-				turnLeft();
-				while(frontIsClear()){
 					move();
-				}
-				turnLeft();
-			}
-			
-		}
+					
+		}else move();
 		
 	}
 
+}
 }
