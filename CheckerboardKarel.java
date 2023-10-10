@@ -33,7 +33,7 @@ public class CheckerboardKarel extends Karel{
 								move();
 								if (noBeepersPresent());
 								else {
-									turnLeft();
+									
 									turnLeft();
 									turnLeft();
 									move();
