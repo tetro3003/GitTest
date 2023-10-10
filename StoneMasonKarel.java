@@ -4,7 +4,7 @@ public class StoneMasonKarel extends Karel {
 	
 	public void run(){
 		
-		
+		turnLeft();
 		rebuilder();
 		
 	}
@@ -13,7 +13,7 @@ public class StoneMasonKarel extends Karel {
 	
 	while(frontIsClear()){
 		
-		turnLeft();
+		
 	
 		while(frontIsClear()){
 			
@@ -34,6 +34,10 @@ public class StoneMasonKarel extends Karel {
 		
 		turnLeft();
 		
-		}
+		move();
+		move();
+		move();
+		move();	
+	}
 	}
 }
