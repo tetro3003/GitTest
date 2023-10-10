@@ -10,42 +10,39 @@ public class CheckerboardKarel extends Karel{
 	
 	private void checkers(){
 		
-		while(noBeepersPresent()){
-			
-			putBeeper();
-			move();
-			if(frontIsClear())
-			{
+		if(frontIsClear()){
+			while(frontIsClear()){
+				
+				putBeeper();
 				move();
+				if(frontIsClear()) move();
+				
 			}
-			if(frontIsClear());
-			else {
-				turnLeft();
-				move();
+		} else {
+			
+			turnLeft();
+			move();
+			if(noBeepersPresent()){
 				turnLeft();
 				while(frontIsClear()){
+					
 					putBeeper();
 					move();
-					if(frontIsClear())
-					{
-						move();
-					}
-					if(frontIsClear());
-					else{
-						turnLeft();
-						turnLeft();
-						turnLeft();
-						move();
-						turnLeft();
-						turnLeft();
-						turnLeft();
-						break;
-					}
+					if(frontIsClear()) move();
+					
 				}
+			} else {
+				turnLeft();
+				turnLeft();
+				move();
+				move();
+				turnLeft();
+				turnLeft();
+				turnLeft();
 			}
 			
 		}
-		
+			
 		
 	}
 
