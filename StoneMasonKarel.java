@@ -1,4 +1,32 @@
+import stanford.karel.Karel;
 
-public class StoneMasonKarel {
+public class StoneMasonKarel extends Karel {
+	
+	public void run(){
+		
+		
+	}
+	
+	private void rebuilder(){
+		
+		while(frontIsClear()){
+			
+			turnLeft();
+			while(frontIsClear()){
+				if(noBeepersPresent()) {
+					putBeeper();
+					}
+				turnLeft();
+				turnLeft();
+				turnLeft();
+				while(frontIsClear()){
+					move();
+				}
+				turnLeft();
+			}
+			
+		}
+		
+	}
 
 }
