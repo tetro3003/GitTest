@@ -28,18 +28,24 @@ public class CheckerboardKarel extends Karel{
 							move();
 							if(frontIsClear()) {
 								move();
-							}	 
+							} else {
+								turnLeft();
+								move();
+								if (noBeepersPresent());
+								else {
+									turnLeft();
+									turnLeft();
+									turnLeft();
+									move();
+									move();
+									turnLeft();
+									turnLeft();
+									turnLeft();
+								}
+							}
 					}
 				}
-					else {
-						turnLeft();
-						turnLeft();
-						move();
-						move();
-						turnLeft();
-						turnLeft();
-						turnLeft();
-		
+					
 			}
 			
 		
