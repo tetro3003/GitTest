@@ -22,7 +22,7 @@ public class StoneMasonKarel extends Karel {
 	}
 		turnLeft();
 		turnLeft();
-		turnLeft();
+		
 
 		while(frontIsClear()){
 			move();
