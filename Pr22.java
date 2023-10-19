@@ -20,14 +20,14 @@ public class Pr22 extends GraphicsProgram {
 					GRect rect = new GRect(20,20);
 					add(rect, b*20, a*20);
 					
-					} else if(a%2==0&&b%2==1){
-						GRect rect = new GRect(20,20);
-						add(rect, b*20, a*20);
+				} else if(a%2==0&&b%2==1){
+					GRect rect = new GRect(20,20);
+					add(rect, b*20, a*20);
 						
-						} else if(a%2==1&&b%2==1){
-							GRect rect = new GRect(20,20);
-							rect.setColor(Color.BLACK);;
-							add(rect, b*20, a*20);
+				} else if(a%2==1&&b%2==1){
+					GRect rect = new GRect(20,20);
+					rect.setColor(Color.BLACK);;
+					add(rect, b*20, a*20);
 							
 							}
 				
