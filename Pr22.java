@@ -9,7 +9,7 @@ public class Pr22 extends GraphicsProgram {
 		
 		GRect rect = new GRect(20,20);
 		rect.setColor(Color.black);;
-	add(rect, b*20, a*20);
+		add(rect, 0*20, 0*20);
 		
 //		for(int a = 0; a<10; a++){
 //			
