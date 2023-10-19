@@ -13,7 +13,7 @@ public class Pr22 extends GraphicsProgram {
 				
 				if(a%2==0&&b%2==0){
 				GRect rect = new GRect(20,20);
-				rect.setColor(Color.BLACK);;
+				rect.setColor(Color.black);;
 				add(rect, b*20, a*20);
 				
 				} else if(a%2==1&&b%2==0){
@@ -26,7 +26,7 @@ public class Pr22 extends GraphicsProgram {
 						
 				} else if(a%2==1&&b%2==1){
 					GRect rect = new GRect(20,20);
-					rect.setColor(Color.BLACK);;
+					rect.setColor(Color.black);;
 					add(rect, b*20, a*20);
 							
 							}
