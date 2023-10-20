@@ -9,7 +9,7 @@ public class Pr30 extends ConsoleProgram {
 		String numToText = b.toString();
 		int length = numToText.length();
 		println();
-		for(int i=length; i>0; i--){
+		for(int i=length-1; i>=0; i--){
 			
 			print(numToText.charAt(i));
 			
