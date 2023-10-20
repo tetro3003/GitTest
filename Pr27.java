@@ -9,7 +9,7 @@ public class Pr27 extends ConsoleProgram{
 		
 		int b = num1;
 		
-		for(int a = 0; a<num2; a++){
+		for(int a = 0; a<num2-1; a++){
 			
 			num1 *= b;
 			
