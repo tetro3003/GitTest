@@ -14,11 +14,6 @@ public class Pr27 extends ConsoleProgram{
 			num1 *= b;
 			
 		}
-		
-		println(num1);
-		
+		println(num1);	
 	}
-	
-	
-	
 }
