@@ -17,12 +17,8 @@ public class Pr24 extends ConsoleProgram {
 			
 			if(a%(b+1)==0) {
 				c++;
-			}
-			
+			}	
 		}
-		
 		println(c);
-		
 	}
-
 }
