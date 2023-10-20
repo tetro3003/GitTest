@@ -13,7 +13,7 @@ public class Pr25 extends ConsoleProgram {
 	
 	private void usj(int a, int b){
 		
-		int c = 0;
+		int c = 1;
 		
 		while(b%(a*c)!=0){
 			
