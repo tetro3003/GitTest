@@ -15,11 +15,11 @@ public class Pr25 extends ConsoleProgram {
 		
 		int c = 0;
 		
-		while(b%(a*(c+1))!=0){
+		while(b%(a*c)!=0){
 			
 			c++;
-			if(b%(a*(c+1))==0) {
-				int d = a*(c+1);
+			if(b%(a*c)==0) {
+				int d = a*c;
 				println(d);
 			}
 		}
