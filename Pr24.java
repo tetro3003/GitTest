@@ -13,7 +13,7 @@ public class Pr24 extends ConsoleProgram {
 		
 		int c=0;
 		
-		for(int b=0; b<a; a++){
+		for(int b=0; b<a; b++){
 			
 			if(a%(b+1)==0) {
 				c++;
