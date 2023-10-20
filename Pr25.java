@@ -19,7 +19,7 @@ public class Pr25 extends ConsoleProgram {
 			
 			c++;
 			if(b%(a*(c+1))==0) {
-				int d = b/(a*(c+1));
+				int d = a*(c+1);
 				println(d);
 			}
 		}
