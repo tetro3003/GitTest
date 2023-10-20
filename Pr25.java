@@ -13,15 +13,13 @@ public class Pr25 extends ConsoleProgram {
 	
 	private void usj(int a, int b){
 		
-		int c = 1;
-		
-		while(b%(a*c)!=0){
+		for(int c=0; c<b; c++){
 			
-			c++;
-			if(b%(a*c)==0) {
-				int d = a*c;
-				println(d);
-			}
+			if((a*(c+1))%b==0)
+				{
+				println((a*(c+1)));
+				break;
+				}
 		}
 		
 	}
