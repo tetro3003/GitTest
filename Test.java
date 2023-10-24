@@ -1,7 +1,7 @@
 
 public class Test {
 	
-	public static void main(){
+	public void run(){
 		
 		
 		System.out.println("Hello World!");
