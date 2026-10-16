@@ -9,13 +9,16 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "build:artifact": "next build && node scripts/build-artifact.mjs"
+    "build:artifact": "next build && node scripts/build-artifact.mjs",
+    "reset-db": "node -e \"require('fs').rmSync('data',{recursive:true,force:true});console.log('Database deleted. It will be recreated with demo data on next start.')\"",
+    "tracker": "node tracker/trustline-tracker.mjs"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.4.1",
     "@radix-ui/react-dialog": "^1.3.1",
     "@radix-ui/react-slot": "^1.5.0",
     "@radix-ui/react-tabs": "^1.2.1",
+    "better-sqlite3": "^12.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.58.0",
@@ -30,6 +33,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -39,5 +43,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

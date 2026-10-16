@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Building2, Database, Loader2 } from "lucide-react";
+import { Building2, Database, History, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,10 +13,31 @@ import { useApi } from "@/lib/hooks";
 import { SOURCE_TYPE_LABEL } from "@/lib/mock/sources";
 import { useDemo } from "@/lib/store";
 
+const ACTION_LABEL: Record<string, string> = {
+  "source.connected": "Connected a source",
+  "source.revoked": "Disconnected a source",
+  "source.custom_added": "Added an app",
+  "share.created": "Shared profile",
+  "share.revoked": "Revoked a lender's access",
+  "applicant.viewed": "Lender viewed your profile",
+  "report.redeemed": "Lender downloaded your report",
+  "work_data.file": "Uploaded work data",
+  "work_data.webhook": "Received work data (webhook)",
+  "work_data.tracker": "Received desktop tracker time",
+  "work_data.api": "Read work data from app",
+  "work_data.recording": "Added a lesson recording",
+  "work_item.shared": "Shared a work item",
+  "work_item.hidden": "Hid a work item",
+  "onboarding.started": "Started onboarding",
+  "kyc.verified": "Identity verified",
+  "profile.work_type": "Changed profession",
+};
+
 export default function Consents() {
   const { personaId, invalidate } = useDemo();
   const borrower = useApi(() => api.getBorrower(personaId), [personaId]);
   const shares = useApi(() => api.listShares(personaId), [personaId]);
+  const log = useApi(() => api.getAccessLog(personaId), [personaId]);
   const [busy, setBusy] = useState<string | null>(null);
 
   const act = async (id: string, fn: () => Promise<unknown>) => {
@@ -109,6 +130,33 @@ export default function Consents() {
                 ) : (
                   <Badge variant="muted" className="capitalize">{sh.status}</Badge>
                 )}
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="size-4 text-brand" /> Access log
+          </CardTitle>
+          <CardDescription>Every time you or a lender used your data.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {log.error && <ErrorState error={log.error} onRetry={log.reload} />}
+          {log.loading && !log.data && <CardSkeleton lines={3} />}
+          {log.data && !log.data.length && <p className="text-sm text-muted-foreground">Nothing yet.</p>}
+          <ul className="divide-y text-sm">
+            {log.data?.map((e, i) => (
+              <li key={`${e.at}-${i}`} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2">
+                <span>
+                  <span className="font-medium">{ACTION_LABEL[e.action] ?? e.action}</span>
+                  {e.detail && <span className="text-muted-foreground"> · {e.detail}</span>}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {e.actor.startsWith("lender:") ? `${e.actor.slice(7)} · ` : ""}
+                  {new Date(e.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                </span>
               </li>
             ))}
           </ul>

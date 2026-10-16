@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Banknote, Bike, CalendarCheck, Car, Check, Clock, Code2, FileText, Loader2, Lock, Mic, PenTool, Radar, Smartphone, Video, Zap } from "lucide-react";
+import { AppWindow, ArrowRight, Banknote, Bike, CalendarCheck, Car, Check, Clock, Code2, FileText, Loader2, Lock, Mic, PenTool, Radar, Smartphone, Video, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,6 +26,7 @@ const ICONS: Record<SourceType, typeof Car> = {
   lesson_audio: Mic,
   booking_app: CalendarCheck,
   salon_sensors: Radar,
+  custom_app: AppWindow,
   utility: Zap,
   mobile_operator: Smartphone,
   invoice_upload: FileText,
@@ -149,9 +150,15 @@ export default function ConnectSources() {
                                 </Button>
                               </div>
                             ) : (
-                              <Button size="sm" variant={s.optional ? "outline" : "default"} onClick={() => openConnect(s)}>
-                                Connect
-                              </Button>
+                              s.tier === 3 && s.type !== "invoice_upload" ? (
+                                <Button asChild size="sm" variant="outline">
+                                  <Link href="/borrower/work">Add work data</Link>
+                                </Button>
+                              ) : (
+                                <Button size="sm" variant={s.optional ? "outline" : "default"} onClick={() => openConnect(s)}>
+                                  Connect
+                                </Button>
+                              )
                             )}
                           </div>
                         </div>

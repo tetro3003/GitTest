@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EvidenceList, IncomeCoverageBar, itemStatsText, SensorTotals, WorkStatusBadge } from "@/components/work-check";
+import { CHANNEL_LABEL } from "@/lib/checker/profiles";
 import type { ActivityRecord, DataSource, WorkCheckResult, WorkItem } from "@/lib/types";
 
 /** Lender view of the profession-specific Work Checker. */
@@ -46,6 +47,21 @@ export function WorkCheckPanel({ result, items, activity, sources }: { result: W
           )}
         </div>
         {sensors && <SensorTotals activity={activity} sourceId={sensors.id} />}
+        <div>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Where the work data comes from</p>
+          <ul className="space-y-1 text-sm">
+            {sources
+              .filter((s) => s.status === "connected" && s.tier === 3 && s.type !== "invoice_upload")
+              .map((s) => (
+                <li key={s.id} className="flex flex-wrap justify-between gap-2">
+                  <span className="font-medium">{s.provider}</span>
+                  <span className="text-muted-foreground">
+                    {s.evidence ? `${CHANNEL_LABEL[s.evidence.channel]} · ${s.evidence.label} · ${s.evidence.events.toLocaleString("en-US")} records` : "Demo data (simulated)"}
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );

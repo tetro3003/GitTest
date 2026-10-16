@@ -2,19 +2,20 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Check, FileAudio, Loader2, Lock, Radar, Upload } from "lucide-react";
+import { Check, FileAudio, Loader2, Lock, Plus, Upload } from "lucide-react";
+import { WorkDataSheet } from "@/components/borrower/work-data-sheet";
+import { Input, Label } from "@/components/ui/input";
 import { WeeklyActivityChart } from "@/components/charts/activity-chart";
-import { CardSkeleton, EmptyState, ErrorState } from "@/components/states";
+import { CardSkeleton, ErrorState } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { EvidenceList, IncomeCoverageBar, itemStatsText, PointsLegend, SensorTotals, WorkStatusBadge } from "@/components/work-check";
 import { api } from "@/lib/api";
 import { analyzeLessonAudio } from "@/lib/checker/audio";
-import { CHECKERS, checkerFor, type CheckerSourceDef } from "@/lib/checker/profiles";
-import { formatDate, WORK_TYPE_LABEL } from "@/lib/format";
+import { CHANNEL_LABEL, checkerFor, sourceDefFor, type CheckerSourceDef } from "@/lib/checker/profiles";
+import { formatDate } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 import { isActivitySource } from "@/lib/mock/sources";
 import { useDemo } from "@/lib/store";
@@ -51,16 +52,8 @@ export default function WorkChecker() {
   const checker = checkerFor(borrower.workType);
   const w = report.workCheck;
   const workSources = borrower.connectedSources.filter((s) => isActivitySource(s.type));
-  const defFor = (s: DataSource): CheckerSourceDef | undefined => checker?.sources.find((d) => d.provider === s.provider);
+  const defFor = (s: DataSource): CheckerSourceDef | undefined => sourceDefFor(s.provider, s.type);
 
-  if (!checker)
-    return (
-      <EmptyState
-        icon={<Radar className="size-5" />}
-        title={`No Work Checker for ${WORK_TYPE_LABEL[borrower.workType].toLowerCase()}s yet`}
-        description={`Today we check ${CHECKERS.map((c) => c.label.toLowerCase()).join(", ")}. Your score isn't affected.`}
-      />
-    );
 
   return (
     <div className="space-y-5">
@@ -97,7 +90,7 @@ export default function WorkChecker() {
         <h2 id="apps" className="font-display text-lg font-semibold">
           Your work apps
         </h2>
-        {!workSources.length && <p className="text-sm text-muted-foreground">No work apps are available for this profile.</p>}
+        {!workSources.length && <p className="text-sm text-muted-foreground">No work apps are listed for this profession yet — add the apps you use below.</p>}
         {workSources.map((s) => {
           const def = defFor(s);
           const connected = s.status === "connected";
@@ -116,16 +109,34 @@ export default function WorkChecker() {
                     )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{def?.how}</p>
+                  {connected && <EvidenceLine source={s} />}
+                  {def && (
+                    <p className="mt-1.5 flex flex-wrap gap-1">
+                      {def.channels.map((c) => (
+                        <span key={c} className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                          {CHANNEL_LABEL[c]}
+                        </span>
+                      ))}
+                    </p>
+                  )}
                 </div>
-                {connected ? (
-                  <Button variant="outline" size="sm" disabled={busy === s.id} onClick={() => run(s.id, () => api.disconnectSource(personaId, s.id))}>
-                    {busy === s.id && <Loader2 className="animate-spin" />} Disconnect
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={() => setConnecting(s)}>
-                    Connect
-                  </Button>
-                )}
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  {s.type !== "lesson_audio" && (
+                    <Button size="sm" variant={connected ? "outline" : "default"} onClick={() => setConnecting(s)}>
+                      {connected ? "Update data" : "Add work data"}
+                    </Button>
+                  )}
+                  {s.type === "lesson_audio" && !connected && (
+                    <Button size="sm" disabled={busy === s.id} onClick={() => run(s.id, () => api.connectSource(personaId, s.id))}>
+                      Turn on
+                    </Button>
+                  )}
+                  {connected && (
+                    <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" disabled={busy === s.id} onClick={() => run(s.id, () => api.disconnectSource(personaId, s.id))}>
+                      {busy === s.id && <Loader2 className="animate-spin" />} Disconnect
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {connected && def?.items && items.length > 0 && (
@@ -148,6 +159,7 @@ export default function WorkChecker() {
             </Card>
           );
         })}
+        <AddOtherApp onAdded={(src) => setConnecting(src)} />
       </section>
 
       {activity.length > 0 && <WeeklyActivityChart activity={activity} weeks={26} title="Your working hours" />}
@@ -168,7 +180,7 @@ export default function WorkChecker() {
         </Link>
       </p>
 
-      <ConnectSheet source={connecting} def={connecting ? defFor(connecting) : undefined} onClose={() => setConnecting(null)} />
+      <WorkDataSheet source={connecting} onClose={() => setConnecting(null)} />
     </div>
   );
 
@@ -244,53 +256,59 @@ function AudioUpload({ sourceId }: { sourceId: string }) {
   );
 }
 
-function ConnectSheet({ source, def, onClose }: { source: DataSource | null; def?: CheckerSourceDef; onClose: () => void }) {
-  const { personaId, invalidate } = useDemo();
-  const [phase, setPhase] = useState<"consent" | "connecting">("consent");
-  const allow = async () => {
-    if (!source) return;
-    setPhase("connecting");
-    try {
-      await api.connectSource(personaId, source.id);
-      invalidate();
-      onClose();
-    } finally {
-      setPhase("consent");
-    }
-  };
+function EvidenceLine({ source }: { source: DataSource }) {
+  const e = source.evidence;
   return (
-    <Dialog open={!!source} onOpenChange={(o) => !o && phase !== "connecting" && onClose()}>
-      <DialogContent>
-        {source && (
-          <div className="space-y-4">
-            <div>
-              <DialogTitle>Connect {source.provider}</DialogTitle>
-              <DialogDescription>{def?.how}</DialogDescription>
-            </div>
-            <div className="rounded-xl bg-muted/60 p-4 text-sm">
-              <p className="mb-2 font-medium">The Work Checker will read:</p>
-              <ul className="space-y-1.5">
-                {(def?.tracks ?? source.dataShared).map((t) => (
-                  <li key={t} className="flex items-center gap-2">
-                    <Check className="size-4 text-positive" /> {t}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 flex items-center gap-2 text-muted-foreground">
-                <Lock className="size-4" /> Read-only · {source.consentDays} days · revoke anytime
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={onClose} disabled={phase === "connecting"}>
-                Cancel
-              </Button>
-              <Button className="flex-1" onClick={allow} disabled={phase === "connecting"}>
-                {phase === "connecting" && <Loader2 className="animate-spin" />} Allow access
-              </Button>
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+    <p className="mt-1.5 text-xs">
+      {e ? (
+        <span className="text-positive">
+          Real data · {CHANNEL_LABEL[e.channel]} · {e.label} · {e.events.toLocaleString("en-US")} records{e.from && e.to ? ` · ${formatDate(e.from)} – ${formatDate(e.to)}` : ""}
+        </span>
+      ) : (
+        <span className="text-muted-foreground">Using demo data — add your own export, webhook or tracker to replace it.</span>
+      )}
+    </p>
+  );
+}
+
+/** Universal: any app not in the list. */
+function AddOtherApp({ onAdded }: { onAdded: (s: DataSource) => void }) {
+  const { personaId, invalidate } = useDemo();
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  return (
+    <Card className="border-dashed p-4">
+      <form
+        className="space-y-2"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          setError("");
+          try {
+            const src = await api.addCustomWorkApp(personaId, name);
+            setName("");
+            invalidate();
+            onAdded(src);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Couldn't add the app");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <Label htmlFor="other-app" className="flex items-center gap-2">
+          <Plus className="size-4 text-brand" /> Use another app?
+        </Label>
+        <p className="text-sm text-muted-foreground">Any app works: upload its export, connect it through Zapier/Make, or let the desktop tracker count your time in it.</p>
+        <div className="flex gap-2">
+          <Input id="other-app" placeholder="e.g. AutoCAD, Canva, Yandex Go, Calendly" value={name} onChange={(e) => setName(e.target.value)} />
+          <Button type="submit" disabled={busy || !name.trim()}>
+            {busy && <Loader2 className="animate-spin" />} Add
+          </Button>
+        </div>
+        {error && <p className="text-sm text-risk">{error}</p>}
+      </form>
+    </Card>
   );
 }

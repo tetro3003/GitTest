@@ -20,6 +20,7 @@ export type SourceType =
   | "lesson_audio"
   | "booking_app"
   | "salon_sensors"
+  | "custom_app"
   | "utility"
   | "mobile_operator"
   | "invoice_upload";
@@ -41,8 +42,83 @@ export interface DataSource {
   dataShared: string[];
   /** How many days the consent is valid for. */
   consentDays: number;
-  /** Work-activity sources are opt-in boosts that can never lower the score. */
+  /** Not required to get a score (work evidence, invoices). */
   optional: boolean;
+  /** Where the real data for this source came from, once any was added. */
+  evidence?: EvidenceInfo;
+}
+
+/** The four universal ways work data gets in (plus simulated demo data). */
+export type EvidenceChannel = "api" | "file" | "webhook" | "tracker" | "upload" | "simulated";
+
+export interface EvidenceInfo {
+  channel: EvidenceChannel;
+  /** Account, file name or device the data came from. */
+  label: string;
+  events: number;
+  from: ISODate | null;
+  to: ISODate | null;
+  updatedAt: ISODateTime;
+}
+
+/** What one unit of recorded work is. Every channel normalises to these. */
+export type WorkEventKind =
+  | "trip"
+  | "order"
+  | "shift"
+  | "design_session"
+  | "design_version"
+  | "client_comment"
+  | "commit"
+  | "pr_merged"
+  | "review"
+  | "issue"
+  | "worklog"
+  | "lesson"
+  | "appointment"
+  | "no_show"
+  | "visit"
+  | "service_hair"
+  | "service_nails"
+  | "service_other"
+  | "app_session"
+  | "task";
+
+/** The universal work event: every app, file, webhook and tracker is turned into these. */
+export interface WorkEvent {
+  at: ISODateTime;
+  minutes: number;
+  kind: WorkEventKind;
+  units?: number;
+  client?: string;
+  amount?: number;
+  km?: number;
+  /** File, repository, project, app… the work belongs to. */
+  item?: string;
+}
+
+/** Real work data attached to one source. Replaces that source's simulated data. */
+export interface EvidenceFeed {
+  sourceId: string;
+  channel: EvidenceChannel;
+  label: string;
+  events: WorkEvent[];
+  updatedAt: ISODateTime;
+}
+
+export interface ImportSummary {
+  fileName: string;
+  rows: number;
+  imported: number;
+  skipped: number;
+  /** Which column was used for what, e.g. { date: "Trip date", amount: "Earnings" }. */
+  columns: Record<string, string>;
+  from: ISODate | null;
+  to: ISODate | null;
+  hours: number;
+  amount: number;
+  kinds: Partial<Record<WorkEventKind, number>>;
+  warnings: string[];
 }
 
 export type ConsentStatus = "active" | "revoked" | "expired";

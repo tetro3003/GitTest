@@ -1,7 +1,8 @@
 import { KeyRound, Webhook } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { API_BASE_URL, PRODUCT_NAME } from "@/lib/config";
+import { PRODUCT_NAME } from "@/lib/config";
+import { ApiTryIt } from "@/components/lender/api-try-it";
 import { buildScoringInput } from "@/lib/mock/dataset";
 import { getPersona } from "@/lib/mock/personas";
 import { computeScoreReport } from "@/lib/scoring";
@@ -32,35 +33,33 @@ function exampleResponse() {
   };
 }
 
-const REQUEST = `POST ${API_BASE_URL}/reports
-Authorization: Bearer sk_live_••••••••
+const REQUEST = `POST /api/v1/reports
+Authorization: Bearer tl_demo_citybank_key
 Content-Type: application/json
 
-{
-  "shareCode": "TL-8F3K-4821",
-  "include": ["score", "income", "reasons", "fraud_checks"],
-  "policy": { "approveMinScore": 670, "declineBelowScore": 560 }
-}`;
+{ "shareCode": "TL-XXXX-1234" }`;
 
 const ENDPOINTS: [string, string, string][] = [
-  ["POST", "/reports", "Redeem a borrower share code and get a scored report"],
-  ["GET", "/reports/{reportId}", "Fetch a previously generated report"],
-  ["GET", "/reports/{reportId}/transactions", "Categorized transactions (if in consent scope)"],
-  ["GET", "/lender/applicants", "List applicants who shared with you"],
-  ["GET", "/lender/monitoring", "Active alerts: activity decline, missed bills, new fraud flags"],
-  ["POST", "/webhooks", "Subscribe to monitoring.alert and consent.revoked events"],
+  ["POST", "/api/v1/reports", "Lender: exchange a borrower's share code for a scored report"],
+  ["GET", "/api/v1/lender/applicants", "Lender: applicants who shared with you (search, band, workType, sortBy)"],
+  ["GET", "/api/v1/lender/applicants/{id}", "Lender: full report, limited to the borrower's consent scope"],
+  ["GET", "/api/v1/lender/monitoring", "Lender: early warnings and fraud alerts"],
+  ["GET", "/api/v1/lender/audit", "Lender: everything your key accessed"],
+  ["POST", "/api/v1/borrowers/{id}/sources/{sid}/import", "Borrower: upload any app's export (CSV/JSON)"],
+  ["POST", "/api/v1/ingest/{key}", "Webhook: work events from Zapier, Make, sensors or the desktop tracker"],
+  ["POST", "/api/v1/borrowers/{id}/sources/{sid}/connect", "Borrower: connect (GitHub username / Figma token for real data)"],
+  ["POST", "/api/v1/borrowers/{id}/shares", "Borrower: share with a lender (scope + days)"],
+  ["POST", "/api/v1/borrowers/{id}/shares/{shareId}/revoke", "Borrower: revoke a lender's access immediately"],
+  ["GET", "/api/v1/health", "Health check"],
 ];
 
-const WEBHOOK = `{
-  "type": "monitoring.alert",
-  "borrowerId": "tamar",
-  "alert": {
-    "type": "activity_decline",
-    "severity": "medium",
-    "message": "Activity down 35% over the last 4 weeks — early warning."
-  },
-  "createdAt": "2026-09-30T08:00:00Z"
-}`;
+const WEBHOOK = `POST /api/v1/ingest/tl_ing_…
+Content-Type: application/json
+
+{ "events": [
+  { "at": "2026-09-30T14:00", "minutes": 60, "kind": "appointment",
+    "client": "Client A", "amount": 45, "item": "Haircut" }
+] }`;
 
 function Code({ children, label }: { children: string; label: string }) {
   return (
@@ -98,6 +97,8 @@ export default function ApiDocs() {
         </CardContent>
       </Card>
 
+      <ApiTryIt />
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -129,14 +130,14 @@ export default function ApiDocs() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>Each lender gets API keys per environment. Every report is bound to a borrower consent token: scope and expiry are enforced server-side, and revoked consents return <code className="font-mono">403 consent_revoked</code>.</p>
+            <p>Each lender has its own API key (stored hashed). A lender only sees applicants with an active share to it; scope and expiry are enforced on the server, and a revoked share returns <code className="font-mono">403</code> immediately. Every access is written to the audit log, which the borrower can see.</p>
             <p>Scores are reproducible: the same consented data always yields the same report, with every reason and point impact included for audit.</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Webhook className="size-4 text-brand" /> Monitoring webhook
+              <Webhook className="size-4 text-brand" /> Work-event webhook (any app)
             </CardTitle>
           </CardHeader>
           <CardContent>

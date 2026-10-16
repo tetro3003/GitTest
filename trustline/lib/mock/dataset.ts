@@ -2,7 +2,8 @@ import { DEMO_AS_OF } from "../config";
 import { checkerFor } from "../checker/profiles";
 import { addDays, weekStart } from "../dates";
 import { weeklyTotals } from "../scoring/activity";
-import type { ActivityRecord, DataSource, ScoringInput, WorkItem, WorkType } from "../types";
+import { eventsToActivity, eventsToItems } from "../evidence/aggregate";
+import type { ActivityRecord, DataSource, EvidenceFeed, ScoringInput, WorkItem, WorkType } from "../types";
 import { buildWorkItems, generatePersonaData, professionSignals, type ActivitySourceSpec, type GeneratedData } from "./generator";
 import { createRng } from "./rng";
 import { isActivitySource, makeSource } from "./sources";
@@ -50,13 +51,14 @@ function toolSpecs(id: string, workType: WorkType): ActivitySourceSpec[] {
  * The sources a borrower can connect for the given profession: the persona's
  * bank, bills and invoices, plus that profession's work apps.
  */
-export function sourceCatalogue(id: string, workType?: WorkType): DataSource[] {
+export function sourceCatalogue(id: string, workType?: WorkType, custom: { id: string; name: string }[] = []): DataSource[] {
   const def = getPersona(id);
   if (!def) throw new Error(`Unknown persona: ${id}`);
   const wt = workType ?? def.borrower.workType;
-  if (wt === def.borrower.workType) return def.spec.sources;
+  const extra = custom.map((c) => makeSource(c.id, "custom_app", c.name, { status: "available" }));
+  if (wt === def.borrower.workType) return [...def.spec.sources, ...extra];
   const base = def.spec.sources.filter((s) => !isActivitySource(s.type));
-  return [...base, ...toolSpecs(id, wt).map((t) => makeSource(t.id, t.type, t.provider, { status: "available" }))];
+  return [...base, ...toolSpecs(id, wt).map((t) => makeSource(t.id, t.type, t.provider, { status: "available" })), ...extra];
 }
 
 /** Raw synthetic data for a persona, generated once and cached. */
@@ -100,10 +102,18 @@ export function buildScoringInput(
   asOf = DEMO_AS_OF,
   itemOverrides: Record<string, boolean> = {},
   extraItems: WorkItem[] = [],
+  feeds: EvidenceFeed[] = [],
 ): ScoringInput {
-  const data = getPersonaData(def.borrower.id, def.borrower.workType);
-  const catalogue = sourceCatalogue(def.borrower.id, def.borrower.workType);
+  const synthetic = getPersonaData(def.borrower.id, def.borrower.workType);
+  const catalogue = connected;
   const ids = new Set(connected.filter((s) => s.status === "connected").map((s) => s.id));
+  // Real work data (export, webhook, tracker, API) replaces the simulated data of its source.
+  const real = new Set(feeds.map((f) => f.sourceId));
+  const data = {
+    ...synthetic,
+    activity: [...synthetic.activity.filter((a) => !real.has(a.sourceId)), ...feeds.flatMap((f) => eventsToActivity(f.sourceId, f.events, asOf))],
+    workItems: [...synthetic.workItems.filter((i) => !real.has(i.sourceId)), ...feeds.flatMap((f) => eventsToItems(f.sourceId, f.events))],
+  };
   const items = [...data.workItems, ...extraItems]
     .filter((i) => ids.has(i.sourceId))
     .map((i) => ({ ...i, shared: itemOverrides[i.id] ?? i.shared }));

@@ -92,10 +92,10 @@ describe("engine guarantees on personas", () => {
     }
   });
 
-  it("professions without a checker are neither rewarded nor penalised", () => {
+  it("professions without their own profile use the universal checker", () => {
     const r = reportFor("irakli");
-    expect(r.workCheck.status).toBe("not_supported");
-    expect(r.workCheckPoints).toBe(0);
+    expect(r.workCheck.profession).toBe("Repair worker");
+    expect(r.workCheck.status).toBe("not_shared");
   });
 
   it("score always within 300–850, band consistent, reasons sum to score", () => {

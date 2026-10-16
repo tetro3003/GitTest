@@ -1,4 +1,4 @@
-import type { SourceType, WorkType } from "../types";
+import type { EvidenceChannel, SourceType, WorkType } from "../types";
 
 /**
  * Work Checker profiles: for each profession, which apps prove the work, what
@@ -17,6 +17,10 @@ export interface CheckerSourceDef {
   items?: string;
   /** Sources that produce signals but no hours (e.g. sensors). */
   signalsOnly?: boolean;
+  /** Ways real data can come in for this app. */
+  channels: EvidenceChannel[];
+  /** Where to find the export in the app, shown on the upload screen. */
+  exportHint?: string;
 }
 
 export interface SignalDef {
@@ -56,8 +60,8 @@ export const CHECKERS: ProfessionChecker[] = [
     unit: "trips",
     hourlyRange: [9, 20],
     sources: [
-      { type: "ride_hailing", provider: "Bolt Driver", tracks: ["Hours online", "Completed trips", "Distance driven", "Acceptance rate", "Driver rating"], how: "Driver signs in to Bolt; we read the weekly earnings statement and trip log." },
-      { type: "ride_hailing", provider: "Uber Driver", tracks: ["Hours online", "Completed trips", "Distance driven", "Driver rating"], how: "Driver signs in to Uber; we read trip history and weekly statements." },
+      { type: "ride_hailing", provider: "Bolt Driver", tracks: ["Hours online", "Completed trips", "Distance driven", "Acceptance rate", "Driver rating"], how: "Driver signs in to Bolt; we read the weekly earnings statement and trip log.", channels: ["file", "webhook"], exportHint: "Bolt Driver app → Earnings → Download statement (CSV)" },
+      { type: "ride_hailing", provider: "Uber Driver", tracks: ["Hours online", "Completed trips", "Distance driven", "Driver rating"], how: "Driver signs in to Uber; we read trip history and weekly statements.", channels: ["file", "webhook"], exportHint: "drivers.uber.com → Earnings → Statements → Download CSV" },
     ],
     signals: [
       { key: "trips", label: "Trips completed" },
@@ -77,8 +81,8 @@ export const CHECKERS: ProfessionChecker[] = [
     unit: "orders",
     hourlyRange: [7, 16],
     sources: [
-      { type: "delivery_platform", provider: "Wolt Partner", tracks: ["Hours online", "Orders delivered", "Distance", "Completion rate", "Courier rating"], how: "Courier signs in to Wolt; we read the shift log and payout statements." },
-      { type: "delivery_platform", provider: "Glovo Courier", tracks: ["Hours online", "Orders delivered", "Distance", "Completion rate"], how: "Courier signs in to Glovo; we read slot history and earnings." },
+      { type: "delivery_platform", provider: "Wolt Partner", tracks: ["Hours online", "Orders delivered", "Distance", "Completion rate", "Courier rating"], how: "Courier signs in to Wolt; we read the shift log and payout statements.", channels: ["file", "webhook"], exportHint: "Wolt Partner app → Earnings → Export (CSV)" },
+      { type: "delivery_platform", provider: "Glovo Courier", tracks: ["Hours online", "Orders delivered", "Distance", "Completion rate"], how: "Courier signs in to Glovo; we read slot history and earnings.", channels: ["file", "webhook"], exportHint: "Glovo Couriers app → Earnings → Download report" },
     ],
     signals: [
       { key: "orders", label: "Orders delivered" },
@@ -98,9 +102,9 @@ export const CHECKERS: ProfessionChecker[] = [
     unit: "design hours",
     hourlyRange: [20, 90],
     sources: [
-      { type: "design_tool", provider: "Figma", tracks: ["Version history of the files you pick", "Editing sessions", "Comments from clients", "Collaborators"], how: "Designer signs in to Figma and picks files; we read each file's version history and comments (Figma REST API).", items: "files" },
-      { type: "design_tool", provider: "Adobe Photoshop", tracks: ["Editing time per document", "Saves", "Export events"], how: "A small Trustline plugin for Creative Cloud logs editing sessions on the documents you choose.", items: "documents" },
-      { type: "design_tool", provider: "Adobe Illustrator", tracks: ["Editing time per document", "Saves", "Export events"], how: "Same Creative Cloud plugin as Photoshop.", items: "documents" },
+      { type: "design_tool", provider: "Figma", tracks: ["Version history of the files you pick", "Editing sessions", "Comments from clients", "Collaborators"], how: "Designer signs in to Figma and picks files; we read each file's version history and comments (Figma REST API).", items: "files", channels: ["api", "tracker", "file"], exportHint: "Any time-tracking export (Toggl, Clockify) of your Figma work" },
+      { type: "design_tool", provider: "Adobe Photoshop", tracks: ["Editing time per document", "Saves", "Export events"], how: "The Trustline desktop tracker counts minutes you actively work in Photoshop (app name and time only — no screenshots).", items: "documents", channels: ["tracker", "file"], exportHint: "A time-tracking export (Toggl, Clockify, RescueTime) filtered to Photoshop" },
+      { type: "design_tool", provider: "Adobe Illustrator", tracks: ["Editing time per document", "Saves", "Export events"], how: "The Trustline desktop tracker counts minutes you actively work in Illustrator.", items: "documents", channels: ["tracker", "file"], exportHint: "A time-tracking export filtered to Illustrator" },
     ],
     signals: [
       { key: "sessions", label: "Editing sessions" },
@@ -121,8 +125,8 @@ export const CHECKERS: ProfessionChecker[] = [
     unit: "coding hours",
     hourlyRange: [25, 110],
     sources: [
-      { type: "dev_tool", provider: "GitHub", tracks: ["Commits on the repositories you pick", "Pull requests merged", "Code reviews by others", "Active days"], how: "Developer installs the Trustline GitHub App on chosen repositories; we read commit and pull-request metadata, never the code.", items: "repositories" },
-      { type: "dev_tool", provider: "Jira", tracks: ["Issues resolved", "Logged work time", "Projects and clients"], how: "Developer connects Jira Cloud; we read resolved issues and work logs.", items: "projects" },
+      { type: "dev_tool", provider: "GitHub", tracks: ["Commits on the repositories you pick", "Pull requests merged", "Code reviews by others", "Active days"], how: "Developer signs in with a GitHub username; we read public commit and pull-request metadata, never the code.", items: "repositories", channels: ["api", "file"], exportHint: "git log --pretty=format:'%ad,%s' --date=iso > commits.csv" },
+      { type: "dev_tool", provider: "Jira", tracks: ["Issues resolved", "Logged work time", "Projects and clients"], how: "Developer connects Jira Cloud; we read resolved issues and work logs.", items: "projects", channels: ["file", "webhook"], exportHint: "Jira → Filters → Export → CSV (all fields), or a Tempo worklog export" },
     ],
     signals: [
       { key: "commits", label: "Commits" },
@@ -143,9 +147,9 @@ export const CHECKERS: ProfessionChecker[] = [
     unit: "lessons",
     hourlyRange: [15, 60],
     sources: [
-      { type: "video_lessons", provider: "Zoom", tracks: ["Lessons held", "Lesson length", "Number of different students"], how: "Tutor connects Zoom; we read meeting metadata (time, length, participant count), never recordings.", items: "lesson series" },
-      { type: "video_lessons", provider: "Google Meet", tracks: ["Lessons held", "Lesson length", "Number of different students"], how: "Tutor connects Google Calendar + Meet; we read meeting metadata.", items: "lesson series" },
-      { type: "lesson_audio", provider: "Offline lesson audio", tracks: ["Recording length", "Share of time with speech"], how: "Tutor uploads or records lesson audio. We only measure how long someone was speaking; audio is never stored or transcribed.", items: "recordings" },
+      { type: "video_lessons", provider: "Zoom", tracks: ["Lessons held", "Lesson length", "Number of different students"], how: "Tutor connects Zoom; we read meeting metadata (time, length, participant count), never recordings.", items: "lesson series", channels: ["file", "webhook"], exportHint: "zoom.us → Reports → Usage → Export as CSV" },
+      { type: "video_lessons", provider: "Google Meet", tracks: ["Lessons held", "Lesson length", "Number of different students"], how: "Tutor connects Google Calendar + Meet; we read meeting metadata.", items: "lesson series", channels: ["file"], exportHint: "Google Calendar → Settings → Import & export → Export, or a Meet attendance CSV" },
+      { type: "lesson_audio", provider: "Offline lesson audio", tracks: ["Recording length", "Share of time with speech"], how: "Tutor uploads or records lesson audio. We only measure how long someone was speaking; audio is never stored or transcribed.", items: "recordings", channels: ["upload"] },
     ],
     signals: [
       { key: "lessons", label: "Lessons" },
@@ -166,9 +170,9 @@ export const CHECKERS: ProfessionChecker[] = [
     unit: "appointments",
     hourlyRange: [12, 45],
     sources: [
-      { type: "booking_app", provider: "Booksy", tracks: ["Appointments completed", "No-shows", "Different clients", "Service types", "Client rating"], how: "Stylist connects Booksy; we read the appointment calendar and service history." },
-      { type: "booking_app", provider: "Fresha", tracks: ["Appointments completed", "No-shows", "Different clients", "Service types"], how: "Stylist connects Fresha; we read appointments and sales history." },
-      { type: "salon_sensors", provider: "Salon sensors", tracks: ["Visitors (door counter)", "Hair services (chair sensor)", "Nail services (station sensor)", "Other services"], how: "Pilot hardware: a door counter and station sensors send anonymous counts — no cameras, no personal data.", signalsOnly: true },
+      { type: "booking_app", provider: "Booksy", tracks: ["Appointments completed", "No-shows", "Different clients", "Service types", "Client rating"], how: "Stylist connects Booksy; we read the appointment calendar and service history.", channels: ["file", "webhook"], exportHint: "Booksy Biz → Statistics → Appointments → Export" },
+      { type: "booking_app", provider: "Fresha", tracks: ["Appointments completed", "No-shows", "Different clients", "Service types"], how: "Stylist connects Fresha; we read appointments and sales history.", channels: ["file", "webhook"], exportHint: "Fresha → Reports → Appointments list → Download CSV" },
+      { type: "salon_sensors", provider: "Salon sensors", tracks: ["Visitors (door counter)", "Hair services (chair sensor)", "Nail services (station sensor)", "Other services"], how: "Pilot hardware: a door counter and station sensors send anonymous counts — no cameras, no personal data.", signalsOnly: true, channels: ["webhook"] },
     ],
     signals: [
       { key: "appointments", label: "Appointments completed" },
@@ -195,13 +199,55 @@ export const CHECKERS: ProfessionChecker[] = [
   },
 ];
 
-export function checkerFor(workType: WorkType): ProfessionChecker | undefined {
-  return CHECKERS.find((c) => c.workType === workType);
+/**
+ * Universal checker for professions without their own profile (repair, other…):
+ * works with any app the person adds, using generic time and earnings checks.
+ */
+export function genericChecker(workType: WorkType): ProfessionChecker {
+  return {
+    workType,
+    label: workType === "repair" ? "Repair worker" : "Self-employed",
+    unit: "work hours",
+    hourlyRange: [8, 60],
+    sources: [],
+    signals: [{ key: "activeDays", label: "Active days" }],
+    checks: [
+      { label: "Days with work per week", target: "≥ 3 days", run: (s, c) => (has(s, "activeDays") ? { value: ratio(s.activeDays, c.weeks).toFixed(1), ok: ratio(s.activeDays, c.weeks) >= 3 } : null) },
+    ],
+  };
+}
+
+export function checkerFor(workType: WorkType): ProfessionChecker {
+  return CHECKERS.find((c) => c.workType === workType) ?? genericChecker(workType);
 }
 
 export function isWorkEvidenceType(t: SourceType): boolean {
-  return CHECKERS.some((c) => c.sources.some((s) => s.type === t));
+  return t === "custom_app" || CHECKERS.some((c) => c.sources.some((s) => s.type === t));
 }
+
+/** "Any other app" — the universal source every profession can add. */
+export const CUSTOM_APP_SOURCE: CheckerSourceDef = {
+  type: "custom_app",
+  provider: "Other app",
+  tracks: ["Work sessions and their length", "Clients", "Earnings, if the export has them"],
+  how: "Add any app you work in. Upload its export, send events from Zapier/Make, or run the desktop tracker.",
+  channels: ["file", "webhook", "tracker"],
+  exportHint: "Most apps have Settings → Download your data / Export (CSV or JSON)",
+};
+
+export function sourceDefFor(provider: string, type?: SourceType): CheckerSourceDef | undefined {
+  if (type === "custom_app") return { ...CUSTOM_APP_SOURCE, provider };
+  return CHECKERS.flatMap((c) => c.sources).find((s) => s.provider === provider);
+}
+
+export const CHANNEL_LABEL: Record<EvidenceChannel, string> = {
+  api: "Sign in (API)",
+  file: "Upload export",
+  webhook: "Live webhook",
+  tracker: "Desktop tracker",
+  upload: "Recording",
+  simulated: "Demo data",
+};
 
 /** Verdict → points. Not sharing costs more than weak evidence, so hiding never pays. */
 export const WORK_CHECK_POINTS = {

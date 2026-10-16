@@ -4,7 +4,9 @@
 
 Hackathon frontend (phase 1). Borrowers connect income sources and get a **verified monthly income**, a **300–850 score (bands A–E)**, a **recommended max monthly payment** and **plain-language reasons**. Lenders get a dashboard with point-based reasons, a score waterfall, fraud checks, monitoring and API docs.
 
-Everything runs in the browser against a **deterministic mock backend**. Every score is computed by a real TypeScript scoring engine from synthetic transactions; nothing is hard-coded.
+It ships with a **real backend**: REST API, SQLite database, lender API keys, consent enforcement and an audit log. The same service also runs entirely in the browser (mock mode) for the shareable single-file demo. Every score is computed by the TypeScript scoring engine; nothing is hard-coded.
+
+👉 **Not a developer? Read [LAPTOP-GUIDE.md](LAPTOP-GUIDE.md)** for step-by-step instructions to run it on your computer.
 
 The product name, currency (₾ GEL) and all policy thresholds live in [`lib/config.ts`](lib/config.ts).
 
@@ -24,7 +26,10 @@ npm run dev          # http://localhost:3000
 | `npm run build` / `npm start` | Production build / serve |
 | `npm run lint` | ESLint (Next.js config) |
 | `npm run typecheck` | `tsc --noEmit` (strict) |
-| `npm test` | Vitest: scoring engine, fraud checks, one test per persona |
+| `npm test` | Vitest: scoring engine, fraud checks, personas, REST API, imports, connectors |
+| `npm run reset-db` | Delete the local database (it is re-seeded with demo data on next start) |
+| `npm run tracker -- --url … --apps "Photoshop"` | Desktop tracker (see Work Checker) |
+| `npm run build:artifact` | Single-file HTML demo (mock mode) |
 
 Node 20+ recommended.
 
@@ -32,8 +37,16 @@ Node 20+ recommended.
 
 1. Push the repo to GitHub and click **Add New → Project** in Vercel, then import it.
 2. Set **Root Directory** to `trustline`. The framework (Next.js) is detected automatically.
-3. Optional env var: `NEXT_PUBLIC_API_MODE=mock` (the default).
-4. Deploy. No database or secrets are needed for the mock mode.
+3. Deploy. On Vercel the SQLite file lives in `/tmp`, so data resets when the server sleeps. That's fine for a demo. For production, swap `server/sqlite-store.ts` for a Postgres store (same `Store` interface).
+4. For a purely in-browser demo, set `NEXT_PUBLIC_API_MODE=mock`.
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `NEXT_PUBLIC_API_MODE` | `live` | `live` = use the backend; `mock` = everything in the browser |
+| `TRUSTLINE_DB_PATH` | `./data/trustline.db` | SQLite file location |
+| `TRUSTLINE_DEMO_LENDER_KEY` | `tl_demo_citybank_key` | API key seeded for City Bank |
+| `NEXT_PUBLIC_LENDER_API_KEY` | `tl_demo_citybank_key` | Key the lender dashboard sends |
+| `GITHUB_TOKEN` | — | Optional, raises GitHub rate limits for the GitHub connector |
 
 From the CLI instead: `cd trustline && npx vercel` (then `npx vercel --prod`).
 
@@ -130,7 +143,38 @@ A profession-specific check that the work behind the income is real and big enou
 
 Borrowers choose exactly which Figma files, repositories, Jira projects or lesson series the checker may see (`/borrower/work`). Lesson audio is analysed **in the browser** ([`audio.ts`](lib/checker/audio.ts), short-frame energy vs. an adaptive noise floor). Only the length and the minutes of speech are sent, never the audio. Salon sensors (door counter plus station sensors) give anonymous yearly counts of visitors and services.
 
-All integrations are simulated, with data shaped like the real exports and APIs. Real connections come with the backend: Figma REST API (versions and comments), a GitHub App, Jira Cloud, Zoom and Google Calendar metadata, Booksy and Fresha, partner exports from Bolt, Uber, Wolt and Glovo, and a Creative Cloud plugin for Photoshop and Illustrator.
+### Universal work data: four doors, one format
+
+Every channel turns work into the same **`WorkEvent`** (`at`, `minutes`, `kind`, `client`, `amount`, `km`, `item`). [`lib/evidence/aggregate.ts`](lib/evidence/aggregate.ts) then turns those events into the weekly records the checker reads, so **any app** can be checked:
+
+| Door | Covers | Code |
+|---|---|---|
+| **Upload export** | Any app that can export history (CSV/JSON). Columns (date, duration, end, amount, client, distance, status, type, project) are detected automatically. | [`lib/evidence/importer.ts`](lib/evidence/importer.ts) |
+| **Live webhook** | Zapier, Make, IFTTT, salon sensors, scripts. Each source gets a private ingest key. | `POST /api/v1/ingest/{key}`, [`lib/evidence/ingest.ts`](lib/evidence/ingest.ts) |
+| **Desktop tracker** | Any desktop program (Photoshop, AutoCAD…). Reads only the front app's name, ignores idle time. | [`tracker/trustline-tracker.mjs`](tracker/trustline-tracker.mjs) |
+| **Sign in (API)** | GitHub (public commits/PRs) and Figma (versions/comments, personal token used once). | [`server/connectors/`](server/connectors/) |
+
+**"Use another app?"** adds any app by name. Professions without their own profile (repair, other) use a universal checker.
+
+**Universal fraud check:** when work data contains earnings, they must match what reached the bank (80–125%). A faked export (> 2× the bank deposits) is a **mismatch**: −50 points and a fraud flag. Try `public/samples/bolt-earnings-FAKED.csv`.
+
+Sample exports for every profession are in [`public/samples/`](public/samples/). Sources without real data use the simulated demo data, and are labelled as such everywhere.
+
+## Backend (`server/`, `lib/service/`)
+
+```
+Browser ──► /api/v1/*  (app/api/v1/[...path]/route.ts)
+              └─► server/router.ts        REST routes, validation, lender API-key check
+                    └─► lib/service/core.ts  the Trustline service (same code as mock mode)
+                          ├─► lib/scoring + lib/checker   scoring engine & Work Checker
+                          └─► Store ── server/sqlite-store.ts  (SQLite: data/trustline.db)
+                                   └─ lib/mock/db.ts           (browser localStorage, mock mode)
+```
+
+- **Tables:** borrowers, source states, custom apps, work-item choices, lesson recordings, evidence feeds + work events, shares, hashed lender API keys, ingest keys, audit log.
+- **Consent is enforced on the server.** A lender sees only applicants with an active, unexpired share to that lender, limited to the share's scope. Revoking returns 403 immediately.
+- **Audit log:** every connection, upload, share, lender view and report redemption. Borrowers see it under *My data → Access log*.
+- **Not real yet:** bank transactions are still the synthetic demo data (open-banking connectors are the next step), and borrower login is not implemented: any borrower id can be opened.
 
 ## Mock adapter & switching to the live API
 
@@ -138,23 +182,19 @@ The UI only talks to `api` from [`lib/api/index.ts`](lib/api/index.ts), which im
 
 ```
 getBorrower · startOnboarding · submitKyc · setWorkType · listSources · connectSource ·
-disconnectSource · getProfile · setWorkItemShared · uploadLessonRecording · listLenders · shareWithLender · listShares · revokeShare ·
+disconnectSource · getProfile · setWorkItemShared · uploadLessonRecording · importWorkData ·
+addCustomWorkApp · getIngestSetup · getAccessLog · listLenders · shareWithLender · listShares · revokeShare ·
 getApplicants · getApplicant · getMonitoring · listPersonas (demo) · resetDemo (demo)
 ```
 
-**Mock mode (default).** [`mock-adapter.ts`](lib/api/mock-adapter.ts) behaves like a server:
+**Mock mode** (`NEXT_PUBLIC_API_MODE=mock`, used by the single-file demo). [`mock-adapter.ts`](lib/api/mock-adapter.ts) runs the service in the browser:
 - data comes from [`lib/mock/generator.ts`](lib/mock/generator.ts), which uses a seeded PRNG, so the same numbers come out on every run;
 - state (connections, shares, KYC) lives in an in-memory DB persisted to `localStorage`;
 - every call waits 300–800 ms so loading skeletons are visible and returns a deep copy;
 - reports are computed by the real engine, using only the sources currently connected;
 - the demo panel's *Simulate API errors* switch makes about 35% of calls fail, to show error states.
 
-**Live mode.**
-1. Implement the endpoints sketched in [`live-adapter.ts`](lib/api/live-adapter.ts). The paths mirror the method names, and the request and response types are the ones in `lib/types.ts`.
-2. Set `NEXT_PUBLIC_API_MODE=live` and `NEXT_PUBLIC_API_BASE_URL=https://…`.
-3. Move `lib/scoring/` server-side (it has no framework dependencies) and add auth headers in `request()`.
-
-No page or component changes are needed.
+**Live mode (default).** [`live-adapter.ts`](lib/api/live-adapter.ts) calls the backend at `/api/v1` (or `NEXT_PUBLIC_API_BASE_URL`), and sends the lender API key on lender routes. Both adapters run the same `lib/service/core.ts`, so they behave identically.
 
 ## Demo personas
 

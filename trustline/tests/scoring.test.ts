@@ -136,10 +136,10 @@ describe("Work Checker", () => {
     expect(bad.status).not.toBe("strong");
   });
 
-  it("has no effect for professions without a checker", () => {
+  it("checks any profession with the universal checker", () => {
     const r = computeScoreReport(emptyInput({ borrower: { id: "b", name: "Ana Test", workType: "repair" }, transactions: steadyIncome(Array(12).fill(1600)) }));
-    expect(r.workCheck.status).toBe("not_supported");
-    expect(r.workCheckPoints).toBe(0);
+    expect(r.workCheck.status).toBe("not_shared");
+    expect(r.workCheck.summary).toMatch(/Add the app you work in/);
   });
 
   it("defines six professions, each with apps and checks", () => {

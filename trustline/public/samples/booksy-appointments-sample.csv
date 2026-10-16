@@ -1,0 +1,413 @@
+Appointment date,Service,Client,Duration,Price,Status
+2026-06-30 10:00,Brows,Client AA,30,20,Completed
+2026-06-30 10:32,Pedicure,Client KK,60,50,No-show
+2026-06-30 11:53,Hair colouring,Client Z,120,110,Completed
+2026-06-30 13:59,Pedicure,Client I,60,50,Completed
+2026-06-30 15:03,Hair colouring,Client P,120,110,Completed
+2026-06-30 17:19,Haircut,Client C,45,35,Completed
+2026-07-01 10:00,Blow-dry,Client Y,30,25,Completed
+2026-07-01 10:49,Blow-dry,Client MM,30,25,Completed
+2026-07-01 11:38,Pedicure,Client N,60,50,Completed
+2026-07-01 13:06,Hair colouring,Client X,120,110,Completed
+2026-07-01 15:27,Pedicure,Client F,60,50,Completed
+2026-07-01 16:38,Haircut,Client E,45,35,Completed
+2026-07-01 17:26,Blow-dry,Client DD,30,25,Completed
+2026-07-02 10:00,Gel manicure,Client D,60,45,Completed
+2026-07-02 11:14,Pedicure,Client C,60,50,Completed
+2026-07-02 12:15,Pedicure,Client H,60,50,Completed
+2026-07-02 13:30,Hair colouring,Client V,120,110,Completed
+2026-07-02 16:00,Blow-dry,Client O,30,25,Completed
+2026-07-03 10:00,Blow-dry,Client KK,30,25,Completed
+2026-07-03 10:47,Brows,Client L,30,20,No-show
+2026-07-03 11:17,Pedicure,Client X,60,50,Completed
+2026-07-03 12:19,Brows,Client F,30,20,Completed
+2026-07-03 13:07,Haircut,Client GG,45,35,Completed
+2026-07-04 10:00,Hair colouring,Client D,120,110,Completed
+2026-07-04 12:25,Blow-dry,Client V,30,25,Completed
+2026-07-04 13:16,Blow-dry,Client EE,30,25,Completed
+2026-07-04 14:04,Hair colouring,Client NN,120,110,Completed
+2026-07-04 16:18,Hair colouring,Client M,120,110,Completed
+2026-07-04 18:21,Gel manicure,Client M,60,45,Completed
+2026-07-04 19:23,Brows,Client B,30,20,Completed
+2026-07-05 10:00,Brows,Client Q,30,20,Completed
+2026-07-05 10:36,Pedicure,Client S,60,50,Completed
+2026-07-05 11:59,Haircut,Client NN,45,35,Completed
+2026-07-05 13:07,Haircut,Client N,45,35,Completed
+2026-07-05 14:05,Haircut,Client II,45,35,Completed
+2026-07-07 10:00,Brows,Client U,30,20,Completed
+2026-07-07 10:41,Blow-dry,Client L,30,25,Completed
+2026-07-07 11:33,Blow-dry,Client B,30,25,Completed
+2026-07-07 12:28,Brows,Client G,30,20,Completed
+2026-07-07 13:08,Haircut,Client X,45,35,Completed
+2026-07-07 14:17,Gel manicure,Client F,60,45,Completed
+2026-07-08 10:00,Blow-dry,Client I,30,25,Completed
+2026-07-08 10:57,Haircut,Client Q,45,35,Completed
+2026-07-08 11:58,Gel manicure,Client Q,60,45,Completed
+2026-07-08 13:19,Haircut,Client M,45,35,Completed
+2026-07-08 14:26,Blow-dry,Client HH,30,25,Completed
+2026-07-08 15:09,Brows,Client K,30,20,Completed
+2026-07-09 10:00,Hair colouring,Client H,120,110,Completed
+2026-07-09 12:06,Brows,Client Y,30,20,Completed
+2026-07-09 12:36,Haircut,Client F,45,35,Completed
+2026-07-09 13:35,Haircut,Client KK,45,35,Completed
+2026-07-09 14:37,Haircut,Client V,45,35,Completed
+2026-07-09 15:41,Pedicure,Client FF,60,50,Completed
+2026-07-09 17:05,Brows,Client A,30,20,Completed
+2026-07-10 10:00,Blow-dry,Client G,30,25,Completed
+2026-07-10 10:33,Pedicure,Client M,60,50,Completed
+2026-07-10 11:47,Gel manicure,Client CC,60,45,Completed
+2026-07-10 13:11,Haircut,Client D,45,35,Completed
+2026-07-10 14:23,Gel manicure,Client P,60,45,Completed
+2026-07-11 10:00,Brows,Client MM,30,20,Completed
+2026-07-11 10:34,Haircut,Client MM,45,35,Completed
+2026-07-11 11:31,Haircut,Client O,45,35,Completed
+2026-07-11 12:16,Gel manicure,Client O,60,45,Completed
+2026-07-11 13:36,Brows,Client C,30,20,Completed
+2026-07-11 14:13,Haircut,Client M,45,35,Completed
+2026-07-11 15:23,Haircut,Client D,45,35,No-show
+2026-07-12 10:00,Hair colouring,Client C,120,110,Completed
+2026-07-12 12:29,Pedicure,Client AA,60,50,Completed
+2026-07-12 13:37,Haircut,Client B,45,35,Completed
+2026-07-12 14:37,Haircut,Client G,45,35,Completed
+2026-07-12 15:27,Hair colouring,Client K,120,110,Completed
+2026-07-14 10:00,Haircut,Client Y,45,35,Completed
+2026-07-14 11:14,Haircut,Client B,45,35,Completed
+2026-07-14 12:16,Brows,Client GG,30,20,Completed
+2026-07-14 13:03,Pedicure,Client II,60,50,Completed
+2026-07-14 14:05,Brows,Client II,30,20,No-show
+2026-07-14 14:54,Blow-dry,Client A,30,25,Completed
+2026-07-15 10:00,Haircut,Client GG,45,35,Completed
+2026-07-15 11:10,Gel manicure,Client N,60,45,Completed
+2026-07-15 12:31,Gel manicure,Client NN,60,45,Completed
+2026-07-15 13:33,Pedicure,Client G,60,50,Completed
+2026-07-15 14:35,Brows,Client G,30,20,Completed
+2026-07-16 10:00,Blow-dry,Client S,30,25,Completed
+2026-07-16 10:34,Gel manicure,Client V,60,45,Completed
+2026-07-16 11:58,Hair colouring,Client E,120,110,No-show
+2026-07-16 13:59,Haircut,Client MM,45,35,Completed
+2026-07-16 14:50,Pedicure,Client AA,60,50,Completed
+2026-07-16 16:19,Pedicure,Client N,60,50,Completed
+2026-07-17 10:00,Haircut,Client B,45,35,Completed
+2026-07-17 11:06,Brows,Client BB,30,20,Completed
+2026-07-17 12:01,Haircut,Client S,45,35,Completed
+2026-07-17 13:00,Blow-dry,Client Q,30,25,Completed
+2026-07-18 10:00,Blow-dry,Client Y,30,25,No-show
+2026-07-18 10:33,Hair colouring,Client EE,120,110,Completed
+2026-07-18 12:57,Pedicure,Client U,60,50,Completed
+2026-07-18 14:05,Hair colouring,Client II,120,110,No-show
+2026-07-18 16:05,Blow-dry,Client W,30,25,Completed
+2026-07-18 17:04,Blow-dry,Client P,30,25,No-show
+2026-07-19 10:00,Haircut,Client G,45,35,Completed
+2026-07-19 10:46,Blow-dry,Client V,30,25,Completed
+2026-07-19 11:27,Haircut,Client DD,45,35,Completed
+2026-07-19 12:17,Hair colouring,Client II,120,110,Completed
+2026-07-19 14:24,Gel manicure,Client HH,60,45,Completed
+2026-07-19 15:46,Brows,Client N,30,20,Completed
+2026-07-21 10:00,Haircut,Client BB,45,35,Completed
+2026-07-21 11:07,Haircut,Client L,45,35,Completed
+2026-07-21 12:11,Gel manicure,Client K,60,45,Completed
+2026-07-21 13:33,Brows,Client Z,30,20,Completed
+2026-07-21 14:10,Blow-dry,Client B,30,25,Completed
+2026-07-21 14:42,Brows,Client Q,30,20,Completed
+2026-07-22 10:00,Brows,Client E,30,20,Completed
+2026-07-22 10:52,Gel manicure,Client E,60,45,Completed
+2026-07-22 12:15,Haircut,Client E,45,35,Completed
+2026-07-22 13:11,Haircut,Client H,45,35,Completed
+2026-07-22 14:19,Gel manicure,Client GG,60,45,Completed
+2026-07-23 10:00,Gel manicure,Client G,60,45,Completed
+2026-07-23 11:08,Blow-dry,Client L,30,25,Completed
+2026-07-23 11:52,Brows,Client DD,30,20,Completed
+2026-07-23 12:32,Blow-dry,Client B,30,25,Completed
+2026-07-23 13:14,Hair colouring,Client N,120,110,Completed
+2026-07-23 15:39,Blow-dry,Client R,30,25,Completed
+2026-07-24 10:00,Hair colouring,Client F,120,110,Completed
+2026-07-24 12:05,Brows,Client T,30,20,Completed
+2026-07-24 12:56,Blow-dry,Client J,30,25,Completed
+2026-07-24 13:41,Haircut,Client D,45,35,Completed
+2026-07-25 10:00,Brows,Client LL,30,20,Completed
+2026-07-25 10:37,Haircut,Client A,45,35,Completed
+2026-07-25 11:30,Hair colouring,Client W,120,110,Completed
+2026-07-25 13:41,Pedicure,Client I,60,50,Completed
+2026-07-25 14:52,Brows,Client X,30,20,Completed
+2026-07-25 15:27,Pedicure,Client P,60,50,Completed
+2026-07-26 10:00,Blow-dry,Client B,30,25,Completed
+2026-07-26 10:37,Brows,Client O,30,20,Completed
+2026-07-26 11:31,Gel manicure,Client P,60,45,Completed
+2026-07-26 12:51,Gel manicure,Client A,60,45,Completed
+2026-07-26 13:52,Haircut,Client X,45,35,Completed
+2026-07-28 10:00,Haircut,Client FF,45,35,Completed
+2026-07-28 10:48,Haircut,Client FF,45,35,Completed
+2026-07-28 11:35,Gel manicure,Client EE,60,45,Completed
+2026-07-28 13:04,Hair colouring,Client BB,120,110,Completed
+2026-07-28 15:18,Haircut,Client E,45,35,Completed
+2026-07-28 16:11,Blow-dry,Client P,30,25,Completed
+2026-07-29 10:00,Pedicure,Client GG,60,50,No-show
+2026-07-29 11:07,Gel manicure,Client KK,60,45,Completed
+2026-07-29 12:26,Gel manicure,Client BB,60,45,Completed
+2026-07-29 13:42,Haircut,Client K,45,35,Completed
+2026-07-29 14:43,Blow-dry,Client F,30,25,Completed
+2026-07-29 15:28,Blow-dry,Client DD,30,25,Completed
+2026-07-30 10:00,Haircut,Client U,45,35,Completed
+2026-07-30 10:48,Hair colouring,Client X,120,110,Completed
+2026-07-30 12:50,Haircut,Client EE,45,35,Completed
+2026-07-30 13:50,Blow-dry,Client A,30,25,Completed
+2026-07-30 14:40,Brows,Client B,30,20,Completed
+2026-07-31 10:00,Brows,Client II,30,20,Completed
+2026-07-31 10:50,Hair colouring,Client MM,120,110,Completed
+2026-07-31 12:54,Brows,Client Y,30,20,Completed
+2026-07-31 13:49,Blow-dry,Client X,30,25,Completed
+2026-07-31 14:40,Brows,Client O,30,20,Completed
+2026-07-31 15:10,Pedicure,Client F,60,50,Completed
+2026-07-31 16:24,Hair colouring,Client S,120,110,Completed
+2026-08-01 10:00,Hair colouring,Client U,120,110,Completed
+2026-08-01 12:18,Hair colouring,Client Z,120,110,Completed
+2026-08-01 14:18,Brows,Client X,30,20,Completed
+2026-08-01 15:18,Gel manicure,Client EE,60,45,Completed
+2026-08-01 16:29,Pedicure,Client FF,60,50,Completed
+2026-08-02 10:00,Pedicure,Client M,60,50,Completed
+2026-08-02 11:26,Gel manicure,Client DD,60,45,Completed
+2026-08-02 12:34,Hair colouring,Client U,120,110,Completed
+2026-08-02 14:35,Gel manicure,Client AA,60,45,Completed
+2026-08-02 15:56,Brows,Client X,30,20,No-show
+2026-08-04 10:00,Hair colouring,Client A,120,110,Completed
+2026-08-04 12:04,Pedicure,Client MM,60,50,Completed
+2026-08-04 13:18,Gel manicure,Client Y,60,45,Completed
+2026-08-04 14:22,Blow-dry,Client H,30,25,Completed
+2026-08-04 15:00,Gel manicure,Client I,60,45,Completed
+2026-08-05 10:00,Pedicure,Client D,60,50,Completed
+2026-08-05 11:05,Hair colouring,Client F,120,110,Completed
+2026-08-05 13:23,Gel manicure,Client Q,60,45,Completed
+2026-08-05 14:51,Pedicure,Client J,60,50,Completed
+2026-08-05 16:21,Brows,Client AA,30,20,Completed
+2026-08-06 10:00,Gel manicure,Client G,60,45,Completed
+2026-08-06 11:30,Haircut,Client E,45,35,Completed
+2026-08-06 12:24,Hair colouring,Client AA,120,110,Completed
+2026-08-06 14:26,Pedicure,Client T,60,50,Completed
+2026-08-07 10:00,Gel manicure,Client HH,60,45,Completed
+2026-08-07 11:18,Brows,Client HH,30,20,Completed
+2026-08-07 12:18,Pedicure,Client E,60,50,Completed
+2026-08-07 13:36,Blow-dry,Client L,30,25,Completed
+2026-08-08 10:00,Brows,Client X,30,20,Completed
+2026-08-08 11:00,Pedicure,Client E,60,50,Completed
+2026-08-08 12:22,Brows,Client EE,30,20,No-show
+2026-08-08 12:58,Brows,Client A,30,20,Completed
+2026-08-08 13:42,Gel manicure,Client L,60,45,Completed
+2026-08-08 14:56,Blow-dry,Client O,30,25,Completed
+2026-08-09 10:00,Hair colouring,Client Z,120,110,Completed
+2026-08-09 12:30,Hair colouring,Client O,120,110,Completed
+2026-08-09 14:41,Brows,Client Y,30,20,Completed
+2026-08-09 15:32,Gel manicure,Client I,60,45,Completed
+2026-08-11 10:00,Blow-dry,Client GG,30,25,Completed
+2026-08-11 10:34,Gel manicure,Client E,60,45,Completed
+2026-08-11 11:49,Pedicure,Client V,60,50,Completed
+2026-08-11 13:07,Pedicure,Client BB,60,50,Completed
+2026-08-11 14:17,Hair colouring,Client B,120,110,Completed
+2026-08-12 10:00,Gel manicure,Client S,60,45,Completed
+2026-08-12 11:26,Pedicure,Client P,60,50,Completed
+2026-08-12 12:48,Pedicure,Client M,60,50,Completed
+2026-08-12 13:59,Blow-dry,Client K,30,25,Completed
+2026-08-12 14:55,Haircut,Client LL,45,35,Completed
+2026-08-13 10:00,Haircut,Client AA,45,35,Completed
+2026-08-13 11:08,Pedicure,Client E,60,50,Completed
+2026-08-13 12:33,Haircut,Client F,45,35,Completed
+2026-08-13 13:40,Hair colouring,Client O,120,110,No-show
+2026-08-13 15:45,Blow-dry,Client P,30,25,Completed
+2026-08-14 10:00,Haircut,Client F,45,35,Completed
+2026-08-14 10:51,Hair colouring,Client E,120,110,Completed
+2026-08-14 13:07,Blow-dry,Client AA,30,25,Completed
+2026-08-14 14:00,Gel manicure,Client V,60,45,Completed
+2026-08-15 10:00,Blow-dry,Client F,30,25,Completed
+2026-08-15 10:32,Pedicure,Client Q,60,50,No-show
+2026-08-15 11:36,Brows,Client GG,30,20,Completed
+2026-08-15 12:21,Hair colouring,Client JJ,120,110,Completed
+2026-08-16 10:00,Hair colouring,Client BB,120,110,Completed
+2026-08-16 12:12,Blow-dry,Client O,30,25,Completed
+2026-08-16 12:51,Haircut,Client G,45,35,Completed
+2026-08-16 13:38,Pedicure,Client CC,60,50,Completed
+2026-08-18 10:00,Hair colouring,Client EE,120,110,Completed
+2026-08-18 12:18,Gel manicure,Client M,60,45,Completed
+2026-08-18 13:47,Pedicure,Client DD,60,50,Completed
+2026-08-18 14:54,Blow-dry,Client HH,30,25,Completed
+2026-08-18 15:41,Blow-dry,Client B,30,25,Completed
+2026-08-18 16:18,Brows,Client GG,30,20,No-show
+2026-08-18 16:57,Hair colouring,Client DD,120,110,Completed
+2026-08-19 10:00,Hair colouring,Client T,120,110,Completed
+2026-08-19 12:21,Blow-dry,Client D,30,25,Completed
+2026-08-19 12:58,Gel manicure,Client T,60,45,Completed
+2026-08-19 14:10,Blow-dry,Client T,30,25,Completed
+2026-08-19 14:41,Pedicure,Client S,60,50,Completed
+2026-08-20 10:00,Pedicure,Client L,60,50,Completed
+2026-08-20 11:29,Brows,Client DD,30,20,Completed
+2026-08-20 11:59,Hair colouring,Client GG,120,110,Completed
+2026-08-20 14:21,Pedicure,Client EE,60,50,Completed
+2026-08-20 15:37,Blow-dry,Client G,30,25,Completed
+2026-08-20 16:28,Haircut,Client BB,45,35,Completed
+2026-08-21 10:00,Blow-dry,Client GG,30,25,Completed
+2026-08-21 10:37,Gel manicure,Client EE,60,45,Completed
+2026-08-21 12:07,Brows,Client X,30,20,Completed
+2026-08-21 12:54,Gel manicure,Client U,60,45,Completed
+2026-08-22 10:00,Haircut,Client F,45,35,Completed
+2026-08-22 11:05,Blow-dry,Client JJ,30,25,Completed
+2026-08-22 11:39,Haircut,Client NN,45,35,Completed
+2026-08-22 12:25,Blow-dry,Client V,30,25,Completed
+2026-08-23 10:00,Hair colouring,Client G,120,110,Completed
+2026-08-23 12:22,Brows,Client S,30,20,No-show
+2026-08-23 13:21,Brows,Client G,30,20,Completed
+2026-08-23 14:13,Haircut,Client II,45,35,Completed
+2026-08-25 10:00,Hair colouring,Client Y,120,110,Completed
+2026-08-25 12:24,Gel manicure,Client X,60,45,Completed
+2026-08-25 13:27,Hair colouring,Client JJ,120,110,Completed
+2026-08-25 15:30,Haircut,Client Y,45,35,Completed
+2026-08-25 16:30,Hair colouring,Client MM,120,110,Completed
+2026-08-25 18:55,Blow-dry,Client Z,30,25,Completed
+2026-08-25 19:47,Hair colouring,Client I,120,110,Completed
+2026-08-26 10:00,Gel manicure,Client GG,60,45,Completed
+2026-08-26 11:10,Hair colouring,Client GG,120,110,No-show
+2026-08-26 13:25,Brows,Client NN,30,20,Completed
+2026-08-26 14:05,Blow-dry,Client V,30,25,Completed
+2026-08-26 14:56,Hair colouring,Client D,120,110,Completed
+2026-08-27 10:00,Hair colouring,Client A,120,110,Completed
+2026-08-27 12:25,Blow-dry,Client C,30,25,Completed
+2026-08-27 13:25,Blow-dry,Client U,30,25,Completed
+2026-08-27 14:21,Blow-dry,Client T,30,25,Completed
+2026-08-28 10:00,Gel manicure,Client H,60,45,Completed
+2026-08-28 11:30,Hair colouring,Client AA,120,110,No-show
+2026-08-28 13:54,Brows,Client KK,30,20,Completed
+2026-08-28 14:48,Hair colouring,Client D,120,110,Completed
+2026-08-28 17:16,Brows,Client J,30,20,Completed
+2026-08-28 18:12,Blow-dry,Client U,30,25,Completed
+2026-08-29 10:00,Blow-dry,Client II,30,25,Completed
+2026-08-29 10:52,Blow-dry,Client D,30,25,Completed
+2026-08-29 11:33,Hair colouring,Client I,120,110,Completed
+2026-08-29 14:00,Brows,Client II,30,20,Completed
+2026-08-29 14:50,Haircut,Client JJ,45,35,Completed
+2026-08-29 15:49,Blow-dry,Client DD,30,25,Completed
+2026-08-29 16:44,Brows,Client N,30,20,Completed
+2026-08-30 10:00,Blow-dry,Client G,30,25,Completed
+2026-08-30 10:33,Blow-dry,Client B,30,25,Completed
+2026-08-30 11:10,Blow-dry,Client E,30,25,Completed
+2026-08-30 11:55,Brows,Client DD,30,20,No-show
+2026-08-30 12:45,Gel manicure,Client EE,60,45,Completed
+2026-08-30 14:15,Gel manicure,Client KK,60,45,Completed
+2026-09-01 10:00,Blow-dry,Client T,30,25,Completed
+2026-09-01 10:53,Blow-dry,Client G,30,25,Completed
+2026-09-01 11:42,Pedicure,Client HH,60,50,Completed
+2026-09-01 12:44,Gel manicure,Client A,60,45,Completed
+2026-09-01 14:12,Brows,Client N,30,20,Completed
+2026-09-01 14:53,Pedicure,Client H,60,50,Completed
+2026-09-02 10:00,Gel manicure,Client BB,60,45,Completed
+2026-09-02 11:00,Brows,Client F,30,20,Completed
+2026-09-02 11:35,Pedicure,Client GG,60,50,Completed
+2026-09-02 13:00,Brows,Client O,30,20,Completed
+2026-09-03 10:00,Hair colouring,Client BB,120,110,Completed
+2026-09-03 12:05,Gel manicure,Client E,60,45,Completed
+2026-09-03 13:34,Gel manicure,Client T,60,45,Completed
+2026-09-03 14:44,Pedicure,Client L,60,50,Completed
+2026-09-04 10:00,Brows,Client MM,30,20,Completed
+2026-09-04 11:00,Gel manicure,Client JJ,60,45,Completed
+2026-09-04 12:28,Hair colouring,Client JJ,120,110,Completed
+2026-09-04 14:56,Haircut,Client X,45,35,Completed
+2026-09-05 10:00,Hair colouring,Client GG,120,110,Completed
+2026-09-05 12:27,Brows,Client N,30,20,Completed
+2026-09-05 13:13,Gel manicure,Client JJ,60,45,Completed
+2026-09-05 14:19,Hair colouring,Client CC,120,110,Completed
+2026-09-06 10:00,Gel manicure,Client Q,60,45,Completed
+2026-09-06 11:19,Blow-dry,Client N,30,25,Completed
+2026-09-06 12:05,Brows,Client F,30,20,Completed
+2026-09-06 12:59,Haircut,Client K,45,35,Completed
+2026-09-08 10:00,Pedicure,Client HH,60,50,Completed
+2026-09-08 11:26,Hair colouring,Client L,120,110,Completed
+2026-09-08 13:54,Hair colouring,Client H,120,110,Completed
+2026-09-08 16:17,Gel manicure,Client N,60,45,Completed
+2026-09-08 17:25,Gel manicure,Client D,60,45,Completed
+2026-09-09 10:00,Gel manicure,Client E,60,45,Completed
+2026-09-09 11:28,Pedicure,Client J,60,50,Completed
+2026-09-09 12:38,Gel manicure,Client N,60,45,Completed
+2026-09-09 13:55,Blow-dry,Client P,30,25,Completed
+2026-09-10 10:00,Hair colouring,Client W,120,110,Completed
+2026-09-10 12:19,Gel manicure,Client K,60,45,Completed
+2026-09-10 13:39,Hair colouring,Client J,120,110,Completed
+2026-09-10 15:45,Pedicure,Client GG,60,50,Completed
+2026-09-10 16:54,Hair colouring,Client CC,120,110,Completed
+2026-09-11 10:00,Gel manicure,Client EE,60,45,Completed
+2026-09-11 11:16,Hair colouring,Client GG,120,110,Completed
+2026-09-11 13:20,Pedicure,Client E,60,50,Completed
+2026-09-11 14:31,Brows,Client E,30,20,Completed
+2026-09-11 15:13,Haircut,Client BB,45,35,Completed
+2026-09-11 16:08,Blow-dry,Client Z,30,25,Completed
+2026-09-11 16:58,Hair colouring,Client KK,120,110,Completed
+2026-09-12 10:00,Haircut,Client EE,45,35,Completed
+2026-09-12 10:56,Pedicure,Client Z,60,50,Completed
+2026-09-12 12:26,Gel manicure,Client K,60,45,Completed
+2026-09-12 13:43,Brows,Client A,30,20,Completed
+2026-09-13 10:00,Brows,Client Z,30,20,Completed
+2026-09-13 10:55,Blow-dry,Client O,30,25,Completed
+2026-09-13 11:35,Hair colouring,Client Z,120,110,Completed
+2026-09-13 13:55,Hair colouring,Client I,120,110,Completed
+2026-09-13 16:23,Haircut,Client EE,45,35,Completed
+2026-09-15 10:00,Blow-dry,Client B,30,25,Completed
+2026-09-15 10:41,Pedicure,Client U,60,50,Completed
+2026-09-15 12:01,Gel manicure,Client Q,60,45,Completed
+2026-09-15 13:13,Pedicure,Client Q,60,50,Completed
+2026-09-15 14:13,Blow-dry,Client E,30,25,Completed
+2026-09-15 14:54,Brows,Client R,30,20,Completed
+2026-09-15 15:52,Blow-dry,Client FF,30,25,Completed
+2026-09-16 10:00,Haircut,Client N,45,35,Completed
+2026-09-16 10:46,Brows,Client J,30,20,Completed
+2026-09-16 11:25,Hair colouring,Client BB,120,110,Completed
+2026-09-16 13:33,Haircut,Client G,45,35,Completed
+2026-09-16 14:48,Hair colouring,Client F,120,110,Completed
+2026-09-16 17:12,Hair colouring,Client M,120,110,Completed
+2026-09-16 19:13,Brows,Client Y,30,20,Completed
+2026-09-17 10:00,Brows,Client L,30,20,Completed
+2026-09-17 10:49,Hair colouring,Client C,120,110,Completed
+2026-09-17 12:51,Haircut,Client C,45,35,Completed
+2026-09-17 13:36,Blow-dry,Client K,30,25,Completed
+2026-09-18 10:00,Hair colouring,Client M,120,110,Completed
+2026-09-18 12:19,Blow-dry,Client M,30,25,Completed
+2026-09-18 13:00,Haircut,Client BB,45,35,Completed
+2026-09-18 13:55,Gel manicure,Client CC,60,45,Completed
+2026-09-18 15:02,Gel manicure,Client L,60,45,Completed
+2026-09-18 16:07,Hair colouring,Client W,120,110,Completed
+2026-09-18 18:27,Brows,Client CC,30,20,Completed
+2026-09-19 10:00,Gel manicure,Client KK,60,45,Completed
+2026-09-19 11:00,Gel manicure,Client B,60,45,Completed
+2026-09-19 12:19,Brows,Client Z,30,20,Completed
+2026-09-19 13:05,Hair colouring,Client JJ,120,110,Completed
+2026-09-20 10:00,Gel manicure,Client Y,60,45,Completed
+2026-09-20 11:05,Brows,Client GG,30,20,Completed
+2026-09-20 12:00,Brows,Client A,30,20,Completed
+2026-09-20 12:57,Blow-dry,Client M,30,25,Completed
+2026-09-20 13:45,Gel manicure,Client AA,60,45,Completed
+2026-09-22 10:00,Pedicure,Client NN,60,50,Completed
+2026-09-22 11:05,Blow-dry,Client M,30,25,Completed
+2026-09-22 11:43,Hair colouring,Client NN,120,110,Completed
+2026-09-22 14:09,Haircut,Client U,45,35,Completed
+2026-09-22 15:04,Brows,Client Q,30,20,Completed
+2026-09-22 15:59,Pedicure,Client KK,60,50,Completed
+2026-09-22 17:26,Pedicure,Client R,60,50,Completed
+2026-09-23 10:00,Gel manicure,Client C,60,45,Completed
+2026-09-23 11:04,Gel manicure,Client KK,60,45,Completed
+2026-09-23 12:17,Blow-dry,Client BB,30,25,Completed
+2026-09-23 13:09,Haircut,Client I,45,35,Completed
+2026-09-24 10:00,Blow-dry,Client MM,30,25,Completed
+2026-09-24 10:57,Gel manicure,Client Q,60,45,Completed
+2026-09-24 11:59,Brows,Client X,30,20,Completed
+2026-09-24 12:32,Haircut,Client T,45,35,Completed
+2026-09-24 13:23,Haircut,Client R,45,35,Completed
+2026-09-24 14:33,Blow-dry,Client GG,30,25,Completed
+2026-09-24 15:33,Pedicure,Client BB,60,50,Completed
+2026-09-25 10:00,Gel manicure,Client U,60,45,Completed
+2026-09-25 11:12,Brows,Client EE,30,20,Completed
+2026-09-25 12:12,Haircut,Client J,45,35,No-show
+2026-09-25 13:22,Brows,Client MM,30,20,Completed
+2026-09-25 14:19,Pedicure,Client I,60,50,Completed
+2026-09-25 15:30,Brows,Client P,30,20,Completed
+2026-09-26 10:00,Gel manicure,Client F,60,45,Completed
+2026-09-26 11:02,Haircut,Client MM,45,35,Completed
+2026-09-26 12:02,Brows,Client S,30,20,Completed
+2026-09-26 12:42,Pedicure,Client I,60,50,Completed
+2026-09-27 10:00,Brows,Client GG,30,20,Completed
+2026-09-27 10:38,Blow-dry,Client O,30,25,Completed
+2026-09-27 11:23,Hair colouring,Client D,120,110,Completed
+2026-09-27 13:30,Hair colouring,Client NN,120,110,Completed

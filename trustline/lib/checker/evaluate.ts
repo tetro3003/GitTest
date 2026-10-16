@@ -1,4 +1,5 @@
 import { CURRENCY } from "../config";
+import { addDays } from "../dates";
 import type { Features, ScoringInput, WorkCheckResult, WorkCheckStatus, WorkEvidenceLine } from "../types";
 import { checkerFor, isWorkEvidenceType, WORK_CHECK_POINTS } from "./profiles";
 
@@ -17,6 +18,8 @@ export const CHECKER_RULES = {
   /** Strong evidence also needs income within high × this. */
   strongIncomeMultiple: 1.15,
   minWeeks: 4,
+  /** Strong evidence needs at least two months of history. */
+  strongMinWeeks: 8,
 } as const;
 
 /**
@@ -33,8 +36,6 @@ export function evaluateWorkCheck(input: ScoringInput, f: Features, claimedIncom
   const income = f.verifiedMonthlyIncome;
   const base = { income, explainedIncome: null, activeHoursPerWeek: 0, consistency: 0, evidence: [] as WorkEvidenceLine[], sourcesUsed: [] as string[] };
 
-  if (!checker)
-    return { ...base, status: "not_supported", points: 0, profession: "Self-employed", summary: "We don't have a work checker for this profession yet, so it doesn't affect your score." };
 
   const workSources = input.sources.filter((s) => isWorkEvidenceType(s.type));
   const sourceIds = new Set(workSources.map((s) => s.id));
@@ -50,7 +51,10 @@ export function evaluateWorkCheck(input: ScoringInput, f: Features, claimedIncom
   });
 
   if (!workSources.length || !records.length)
-    return result("not_shared", `Connect ${checker.sources.slice(0, 2).map((s) => s.provider).join(" or ")} so we can confirm your work. Without it your score loses ${-WORK_CHECK_POINTS.not_shared} points.`);
+    return result(
+      "not_shared",
+      `${checker.sources.length ? `Connect ${checker.sources.slice(0, 2).map((s) => s.provider).join(" or ")}` : "Add the app you work in"} so we can confirm your work. Without it your score loses ${-WORK_CHECK_POINTS.not_shared} points.`,
+    );
 
   // Weekly totals across all connected work tools.
   const weeks = new Map<string, { hours: number; signals: Record<string, number> }>();
@@ -60,7 +64,8 @@ export function evaluateWorkCheck(input: ScoringInput, f: Features, claimedIncom
     for (const [k, v] of Object.entries(r.signals)) w.signals[k] = k === "activeDays" ? Math.min(7, (w.signals[k] ?? 0) + v) : (w.signals[k] ?? 0) + v;
     weeks.set(r.weekStart, w);
   }
-  const ordered = [...weeks.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([, v]) => v);
+  const orderedEntries = [...weeks.entries()].sort(([a], [b]) => (a < b ? -1 : 1));
+  const ordered = orderedEntries.map(([, v]) => v);
   const last52 = ordered.slice(-52);
   const recent = ordered.slice(-RECENT_WEEKS);
   const active = (w: { hours: number }) => w.hours >= ACTIVE_WEEK_MIN_HOURS;
@@ -69,7 +74,9 @@ export function evaluateWorkCheck(input: ScoringInput, f: Features, claimedIncom
   const activeWeeks = last52.filter(active).length;
   const expectedWeeks = f.seasonal ? Math.max(activeWeeks, Math.round(last52.length * 0.75)) : last52.length;
   const consistency = expectedWeeks ? Math.min(1, activeWeeks / expectedWeeks) : 0;
+  const recentKeys = orderedEntries.slice(-RECENT_WEEKS).map(([k]) => k);
   const basis = f.seasonal ? recent.filter(active) : recent;
+  const basisWeeks = recentKeys.filter((_, i) => !f.seasonal || active(recent[i]));
   const hoursPerWeek = basis.length ? basis.reduce((a, w) => a + w.hours, 0) / basis.length : 0;
   const explained = { low: hoursPerWeek * WEEKS_PER_MONTH * checker.hourlyRange[0], high: hoursPerWeek * WEEKS_PER_MONTH * checker.hourlyRange[1] };
 
@@ -91,6 +98,23 @@ export function evaluateWorkCheck(input: ScoringInput, f: Features, claimedIncom
     const r = c.run(agg, { weeks: Math.max(1, basis.length), hours: Math.max(1, totalHours) });
     if (r) evidence.push({ label: c.label, value: r.value, target: c.target, ok: r.ok });
   }
+  // Universal fraud check: earnings in uploaded/received work data must match what reached the bank.
+  const earnings = basis.reduce((a, w) => a + (w.signals.earnings ?? 0), 0);
+  if (earnings > 0 && basis.length) {
+    const from = basisWeeks[0];
+    const to = addDays(basisWeeks[basisWeeks.length - 1], 13);
+    const keys = workSources.map((s) => s.provider.split(" ")[0].toLowerCase());
+    const inflows = input.transactions.filter((t) => t.direction === "in" && t.date >= from && t.date <= to && (t.category === "platform_payout" || t.category === "client_payment"));
+    const matching = inflows.filter((t) => keys.some((k) => t.counterparty.toLowerCase().includes(k)));
+    const bank = (matching.length ? matching : inflows).reduce((a, t) => a + t.amount, 0);
+    const ratio = bank > 0 ? earnings / bank : Infinity;
+    evidence.push({
+      label: "Earnings in work data vs bank deposits",
+      value: bank > 0 ? `${Math.round(ratio * 100)}%` : "no deposits",
+      target: "80–125% of what reached the bank",
+      ok: ratio >= 0.8 && ratio <= 1.25,
+    });
+  }
   const qualityLines = evidence.slice(3);
   const checksShare = qualityLines.length ? qualityLines.filter((e) => e.ok).length / qualityLines.length : 1;
   const extra = { evidence, explainedIncome: { low: Math.round(explained.low), high: Math.round(explained.high) }, activeHoursPerWeek: Math.round(hoursPerWeek * 10) / 10, consistency: Math.round(consistency * 1000) / 1000 };
@@ -103,10 +127,15 @@ export function evaluateWorkCheck(input: ScoringInput, f: Features, claimedIncom
       extra,
     );
 
+  // A forged or wildly inflated export is a mismatch, not just weak evidence.
+  const crossCheck = evidence.find((e) => e.label === "Earnings in work data vs bank deposits");
+  if (crossCheck && !crossCheck.ok && earnings > 0 && crossCheck.value !== "no deposits" && parseInt(crossCheck.value, 10) > 200)
+    return result("mismatch", `Your work data reports ${money(earnings)} of earnings, far more than reached your bank in the same weeks. A lender will review this.`, extra);
+
   if (ordered.length < CHECKER_RULES.minWeeks) return result("weak", "We only have a few weeks of work data so far.", extra);
 
   const incomeOk = income <= explained.high * CHECKER_RULES.strongIncomeMultiple;
-  if (consistency >= CHECKER_RULES.strongConsistency && checksShare >= CHECKER_RULES.strongChecksShare && incomeOk && hoursPerWeek >= ACTIVE_WEEK_MIN_HOURS)
+  if (consistency >= CHECKER_RULES.strongConsistency && checksShare >= CHECKER_RULES.strongChecksShare && incomeOk && hoursPerWeek >= ACTIVE_WEEK_MIN_HOURS && ordered.length >= CHECKER_RULES.strongMinWeeks)
     return result("strong", `Your ${checker.unit} on ${workSources.map((s) => s.provider).join(" + ")} clearly back up your income.`, extra);
   if (consistency >= CHECKER_RULES.moderateConsistency && checksShare >= CHECKER_RULES.moderateChecksShare)
     return result("moderate", "Your work data mostly backs up your income, but some checks didn't pass.", extra);

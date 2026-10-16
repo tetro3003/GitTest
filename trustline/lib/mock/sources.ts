@@ -27,6 +27,7 @@ const CATALOGUE: Record<SourceType, { tier: 1 | 2 | 3; optional: boolean; consen
   lesson_audio: { tier: 3, optional: true, consentDays: 90, dataShared: ["Recording length", "Share of time with speech"] },
   booking_app: { tier: 3, optional: true, consentDays: 180, dataShared: ["Appointments", "No-shows", "Client count", "Service types"] },
   salon_sensors: { tier: 3, optional: true, consentDays: 365, dataShared: ["Visitor counts", "Services per station"] },
+  custom_app: { tier: 3, optional: true, consentDays: 180, dataShared: ["Work sessions and their length", "Clients", "Earnings, if the export has them"] },
   utility: {
     tier: 2,
     optional: false,
@@ -57,6 +58,7 @@ export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
   lesson_audio: "Offline lesson audio",
   booking_app: "Booking app",
   salon_sensors: "Salon sensors (pilot)",
+  custom_app: "Other work app",
   utility: "Utility bills",
   mobile_operator: "Mobile operator",
   invoice_upload: "Invoices",

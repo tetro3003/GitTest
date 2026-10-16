@@ -22,6 +22,8 @@ const result = await build({
     "process.env.NODE_ENV": '"production"',
     "process.env.NEXT_PUBLIC_API_MODE": '"mock"',
     "process.env.NEXT_PUBLIC_API_BASE_URL": "undefined",
+    "process.env.NEXT_PUBLIC_SAMPLES_BASE": '"samples/"',
+    "process.env.NEXT_PUBLIC_LENDER_API_KEY": "undefined",
   },
 });
 const js = result.outputFiles[0].text.replace(/<\/script/gi, "<\\/script");
