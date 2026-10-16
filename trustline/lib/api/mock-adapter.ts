@@ -1,6 +1,6 @@
 import { DEMO_AS_OF, MOCK_LATENCY } from "../config";
 import { addDays } from "../dates";
-import { buildScoringInput } from "../mock/dataset";
+import { buildScoringInput, sourceCatalogue } from "../mock/dataset";
 import { consentsFor, getDb, LENDERS, NOW_ISO, resetDb, saveDb, shareCode, sourcesFor } from "../mock/db";
 import { getPersona, PERSONAS, type PersonaDefinition } from "../mock/personas";
 import { computeScoreReport } from "../scoring";
@@ -37,7 +37,7 @@ function persona(id: string): PersonaDefinition {
 function borrowerOf(id: string): Borrower {
   const p = persona(id);
   const st = getDb().borrowers[id];
-  const sources = sourcesFor(id, p.spec.sources);
+  const sources = sourcesFor(id, sourceCatalogue(id, st.workType));
   return {
     ...p.borrower,
     name: st.name,
@@ -57,12 +57,12 @@ function inputOf(id: string): ScoringInput {
   const p = persona(id);
   const st = getDb().borrowers[id];
   const def = { ...p, borrower: { ...p.borrower, workType: st.workType } };
-  return buildScoringInput(def, sourcesFor(id, p.spec.sources), DEMO_AS_OF, st.items ?? {}, st.uploads ?? []);
+  return buildScoringInput(def, sourcesFor(id, sourceCatalogue(id, st.workType)), DEMO_AS_OF, st.items ?? {}, st.uploads ?? []);
 }
 
 function reportOf(id: string): ScoreReport {
   const st = getDb().borrowers[id];
-  const sources = sourcesFor(id, persona(id).spec.sources);
+  const sources = sourcesFor(id, sourceCatalogue(id, st.workType));
   const key = JSON.stringify([id, st.workType, sources.filter((s) => s.status === "connected").map((s) => s.id), st.items, st.uploads?.map((u) => u.id)]);
   const hit = reportCache.get(key);
   if (hit) return hit;
@@ -140,7 +140,9 @@ export function createMockAdapter(): ApiClient {
     connectSource: async (id, sourceId) => {
       await sleep(900); // OAuth round-trip
       return respond(() => {
-        const s = getDb().borrowers[id]?.sources[sourceId];
+        const st = getDb().borrowers[id];
+        if (st && !st.sources[sourceId] && sourceCatalogue(id, st.workType).some((x) => x.id === sourceId)) st.sources[sourceId] = { status: "available", connectedAt: null };
+        const s = st?.sources[sourceId];
         if (!s) throw new ApiError("Source not found", 404);
         s.status = "connected";
         s.connectedAt = NOW_ISO();

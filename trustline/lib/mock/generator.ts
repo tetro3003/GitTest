@@ -219,20 +219,7 @@ export function generatePersonaData(id: string, spec: PersonaSpec, asOf: ISODate
         });
       }
     }
-    // Shareable items: each gets its weight's share of the source's last 12 weeks.
-    for (const src of a.sources) {
-      if (!src.items) continue;
-      const recent = activity.filter((r) => r.sourceId === src.id).slice(-12);
-      const total: Record<string, number> = { hours: recent.reduce((x, r) => x + r.hoursOnline, 0) };
-      for (const r of recent) for (const [key, v] of Object.entries(r.signals)) total[key] = (total[key] ?? 0) + v;
-      const wsum = src.items.reduce((x, i) => x + i.weight, 0);
-      src.items.forEach((it, i) => {
-        const w = it.weight / wsum;
-        const stats: Record<string, number> = {};
-        for (const [key, v] of Object.entries(total)) stats[key] = key === "activeDays" ? Math.min(Math.round(v), Math.round(v * w * 2)) : Math.round(v * w * 10) / 10;
-        workItems.push({ id: `${src.id}-item-${i + 1}`, sourceId: src.id, name: it.name, weight: w, shared: it.shared ?? true, lastActivity: addDays(asOf, -1 - srng.int(0, 9)), stats });
-      });
-    }
+    workItems.push(...buildWorkItems(a.sources, activity, asOf, srng));
   }
 
   /* ---------- Income ---------- */
@@ -438,7 +425,7 @@ export function generatePersonaData(id: string, spec: PersonaSpec, asOf: ISODate
 }
 
 /** Raw, profession-specific signals for one week in one tool. Shapes mirror what each app exports. */
-function professionSignals(src: ActivitySourceSpec, hours: number, totalHours: number, clients: number, r: Rng): Record<string, number> {
+export function professionSignals(src: ActivitySourceSpec, hours: number, totalHours: number, clients: number, r: Rng): Record<string, number> {
   const n = (x: number) => Math.max(0, Math.round(x));
   switch (src.type) {
     case "ride_hailing": {
@@ -478,4 +465,23 @@ function professionSignals(src: ActivitySourceSpec, hours: number, totalHours: n
     default:
       return {};
   }
+}
+
+/** Shareable items: each gets its weight's share of the source's last 12 weeks. */
+export function buildWorkItems(sources: ActivitySourceSpec[], activity: ActivityRecord[], asOf: ISODate, srng: Rng): WorkItem[] {
+  const workItems: WorkItem[] = [];
+  for (const src of sources) {
+    if (!src.items) continue;
+    const recent = activity.filter((r) => r.sourceId === src.id).slice(-12);
+    const total: Record<string, number> = { hours: recent.reduce((x, r) => x + r.hoursOnline, 0) };
+    for (const r of recent) for (const [key, v] of Object.entries(r.signals)) total[key] = (total[key] ?? 0) + v;
+    const wsum = src.items.reduce((x, i) => x + i.weight, 0);
+    src.items.forEach((it, i) => {
+      const w = it.weight / wsum;
+      const stats: Record<string, number> = {};
+      for (const [key, v] of Object.entries(total)) stats[key] = key === "activeDays" ? Math.min(Math.round(v), Math.round(v * w * 2)) : Math.round(v * w * 10) / 10;
+      workItems.push({ id: `${src.id}-item-${i + 1}`, sourceId: src.id, name: it.name, weight: w, shared: it.shared ?? true, lastActivity: addDays(asOf, -1 - srng.int(0, 9)), stats });
+    });
+  }
+  return workItems;
 }
