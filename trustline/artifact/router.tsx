@@ -31,7 +31,7 @@ export function matchRoute(pattern: string, path: string): Record<string, string
 }
 
 /** A plain #token in the link (e.g. #lender) opens that section. */
-const HASH_ROUTES: Record<string, string> = { demo: "/demo", lender: "/lender", borrower: "/borrower/profile", monitoring: "/lender/monitoring", api: "/lender/api", onboarding: "/borrower/onboarding" };
+const HASH_ROUTES: Record<string, string> = { demo: "/demo", lender: "/lender", borrower: "/borrower/profile", monitoring: "/lender/monitoring", api: "/lender/api", onboarding: "/borrower/onboarding", work: "/borrower/work" };
 
 function initialPath(): string {
   try {

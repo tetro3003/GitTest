@@ -1,15 +1,18 @@
 import { DEMO_AS_OF, MOCK_LATENCY } from "../config";
 import { addDays } from "../dates";
-import { buildScoringInput, getPersonaData } from "../mock/dataset";
+import { buildScoringInput } from "../mock/dataset";
 import { consentsFor, getDb, LENDERS, NOW_ISO, resetDb, saveDb, shareCode, sourcesFor } from "../mock/db";
 import { getPersona, PERSONAS, type PersonaDefinition } from "../mock/personas";
 import { computeScoreReport } from "../scoring";
+import { weeklyTotals } from "../scoring/activity";
 import type {
   ApplicantSummary,
   Borrower,
   MonitoringAlert,
   ScoreReport,
+  ScoringInput,
   Severity,
+  WorkItem,
 } from "../types";
 import { ApiError, type ApiClient } from "./client";
 
@@ -49,22 +52,25 @@ function borrowerOf(id: string): Borrower {
 
 const reportCache = new Map<string, ScoreReport>();
 
-function reportOf(id: string): ScoreReport {
+/** Engine input built from what this borrower currently shares. */
+function inputOf(id: string): ScoringInput {
   const p = persona(id);
-  const sources = sourcesFor(id, p.spec.sources);
-  const workType = getDb().borrowers[id].workType;
-  const key = `${id}|${workType}|${sources.filter((s) => s.status === "connected").map((s) => s.id).join(",")}`;
+  const st = getDb().borrowers[id];
+  const def = { ...p, borrower: { ...p.borrower, workType: st.workType } };
+  return buildScoringInput(def, sourcesFor(id, p.spec.sources), DEMO_AS_OF, st.items ?? {}, st.uploads ?? []);
+}
+
+function reportOf(id: string): ScoreReport {
+  const st = getDb().borrowers[id];
+  const sources = sourcesFor(id, persona(id).spec.sources);
+  const key = JSON.stringify([id, st.workType, sources.filter((s) => s.status === "connected").map((s) => s.id), st.items, st.uploads?.map((u) => u.id)]);
   const hit = reportCache.get(key);
   if (hit) return hit;
-  const def = { ...p, borrower: { ...p.borrower, workType } };
-  const report = computeScoreReport(buildScoringInput(def, sources), `${DEMO_AS_OF}T08:00:00.000Z`);
+  const report = computeScoreReport(inputOf(id), `${DEMO_AS_OF}T08:00:00.000Z`);
   reportCache.set(key, report);
   return report;
 }
 
-function connectedIds(id: string): Set<string> {
-  return new Set(sourcesFor(id, persona(id).spec.sources).filter((s) => s.status === "connected").map((s) => s.id));
-}
 
 const SEV_RANK: Record<Severity, number> = { low: 1, medium: 2, high: 3 };
 
@@ -106,6 +112,8 @@ export function createMockAdapter(): ApiClient {
           s.status = "available";
           s.connectedAt = null;
         }
+        st.items = {};
+        st.uploads = [];
         saveDb();
         return borrowerOf(id);
       }),
@@ -152,13 +160,38 @@ export function createMockAdapter(): ApiClient {
 
     getProfile: (id) =>
       respond(() => {
-        const ids = connectedIds(id);
-        return {
-          borrower: borrowerOf(id),
-          report: reportOf(id),
-          activity: getPersonaData(id).activity.filter((a) => ids.has(a.sourceId)),
-        };
+        const input = inputOf(id);
+        return { borrower: borrowerOf(id), report: reportOf(id), activity: input.activity, workItems: input.workItems };
       }),
+
+    setWorkItemShared: (id, itemId, shared) =>
+      respond(() => {
+        const st = getDb().borrowers[id];
+        const upload = st.uploads.find((u) => u.id === itemId);
+        if (upload) upload.shared = shared;
+        else st.items[itemId] = shared;
+        saveDb();
+        return inputOf(id).workItems;
+      }),
+
+    uploadLessonRecording: async (id, sourceId, rec) => {
+      await sleep(600);
+      return respond(() => {
+        const st = getDb().borrowers[id];
+        const item: WorkItem = {
+          id: `${sourceId}-upload-${Date.now().toString(36)}`,
+          sourceId,
+          name: rec.name,
+          weight: 0,
+          shared: true,
+          lastActivity: DEMO_AS_OF,
+          stats: { recordedMinutes: rec.recordedMinutes, speechMinutes: rec.speechMinutes, hours: Math.round((rec.speechMinutes / 60) * 10) / 10 },
+        };
+        st.uploads.push(item);
+        saveDb();
+        return item;
+      });
+    },
 
     listLenders: () => respond(() => LENDERS),
 
@@ -215,15 +248,15 @@ export function createMockAdapter(): ApiClient {
 
     getApplicant: (id) =>
       respond(() => {
-        const ids = connectedIds(id);
-        const data = getPersonaData(id);
+        const input = inputOf(id);
         return {
           borrower: borrowerOf(id),
           report: reportOf(id),
-          transactions: data.transactions.filter((t) => ids.has(t.sourceId)),
-          activity: data.activity.filter((a) => ids.has(a.sourceId)),
-          invoices: data.invoices.filter((i) => ids.has(i.sourceId)),
-          obligations: data.obligations.filter((o) => ids.has(o.sourceId)),
+          transactions: input.transactions,
+          activity: input.activity,
+          invoices: input.invoices,
+          obligations: input.obligations,
+          workItems: input.workItems,
         };
       }),
 
@@ -233,11 +266,9 @@ export function createMockAdapter(): ApiClient {
         for (const p of PERSONAS) {
           const id = p.borrower.id;
           const r = reportOf(id);
-          const ids = connectedIds(id);
-          const trend = getPersonaData(id)
-            .activity.filter((a) => ids.has(a.sourceId))
+          const trend = weeklyTotals(inputOf(id).activity)
             .slice(-12)
-            .map((a) => a.hoursOnline);
+            .map((w) => w.hours);
           const base = { borrowerId: id, borrowerName: getDb().borrowers[id].name, workType: p.borrower.workType, detectedAt: addDays(DEMO_AS_OF, -1), trend };
           r.earlyWarnings.forEach((w, i) => alerts.push({ ...base, id: `${id}-w${i}`, severity: w.severity, type: w.type, message: w.message }));
           if (r.fraudFlags.length) {

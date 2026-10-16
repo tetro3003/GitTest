@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Banknote, Bike, Car, Check, Clock, FileText, Laptop, Loader2, Lock, Smartphone, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Banknote, Bike, CalendarCheck, Car, Check, Clock, Code2, FileText, Loader2, Lock, Mic, PenTool, Radar, Smartphone, Video, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,12 @@ const ICONS: Record<SourceType, typeof Car> = {
   bank: Banknote,
   ride_hailing: Car,
   delivery_platform: Bike,
-  freelance_platform: Laptop,
+  design_tool: PenTool,
+  dev_tool: Code2,
+  video_lessons: Video,
+  lesson_audio: Mic,
+  booking_app: CalendarCheck,
+  salon_sensors: Radar,
   utility: Zap,
   mobile_operator: Smartphone,
   invoice_upload: FileText,
@@ -29,7 +34,7 @@ const ICONS: Record<SourceType, typeof Car> = {
 const TIERS: Record<SourceTier, { title: string; body: string }> = {
   1: { title: "Verified money", body: "Where your income actually lands. At least one bank account is needed." },
   2: { title: "Payment behaviour", body: "Shows you pay bills on time." },
-  3: { title: "Work evidence", body: "Your hours, trips and contracts — a leading indicator of future income." },
+  3: { title: "Work evidence", body: "The Work Checker uses these to confirm your work is real. Strong evidence adds up to +50; sharing nothing costs 30 points." },
 };
 
 export default function ConnectSources() {
@@ -95,7 +100,17 @@ export default function ConnectSources() {
                 <h2 id={`tier-${tier}`} className="font-display text-lg font-semibold">
                   Tier {tier} · {TIERS[tier].title}
                 </h2>
-                <p className="text-sm text-muted-foreground">{TIERS[tier].body}</p>
+                <p className="text-sm text-muted-foreground">
+                  {TIERS[tier].body}
+                  {tier === 3 && (
+                    <>
+                      {" "}
+                      <Link href="/borrower/work" className="font-medium text-brand underline-offset-4 hover:underline">
+                        Open Work Checker
+                      </Link>
+                    </>
+                  )}
+                </p>
               </div>
               <ul className="space-y-3">
                 {items.map((s) => {
@@ -113,8 +128,8 @@ export default function ConnectSources() {
                               <p className="font-semibold">{s.provider}</p>
                               <span className="text-sm text-muted-foreground">{SOURCE_TYPE_LABEL[s.type]}</span>
                               {s.optional && (
-                                <Badge variant="positive">
-                                  <Sparkles /> Optional — can only improve your score
+                                <Badge variant="default">
+                                  <Radar /> Work Checker
                                 </Badge>
                               )}
                             </div>
@@ -202,8 +217,8 @@ export default function ConnectSources() {
                     </p>
                   </div>
                   {active.optional && (
-                    <p className="rounded-xl border border-positive/30 bg-positive-soft p-3 text-sm">
-                      Work activity is an <strong>opt-in boost</strong>: consistent activity can add up to +50 points. Not sharing it never lowers your score.
+                    <p className="rounded-xl border border-brand/30 bg-brand-soft p-3 text-sm">
+                      The <strong>Work Checker</strong> uses this to confirm your work backs up your income. Strong evidence adds up to +50 points; connecting no work app at all costs 30 points.
                     </p>
                   )}
                   <div className="flex gap-2">

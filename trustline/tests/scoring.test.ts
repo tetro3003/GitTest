@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "@/lib/dates";
 import { analyzeIncome, bandFor, computeScoreReport, suggestDecision } from "@/lib/scoring";
-import { checkCircularMoney, checkIncomeActivityMismatch, checkIncomeSpike, checkNameMismatch, checkUnmatchedInvoices } from "@/lib/scoring/fraud";
-import { extractFeatures } from "@/lib/scoring/features";
+import { CHECKERS, WORK_CHECK_POINTS } from "@/lib/checker/profiles";
+import { checkCircularMoney, checkIncomeSpike, checkNameMismatch, checkUnmatchedInvoices } from "@/lib/scoring/fraud";
 import { findCircularPairs, namesMatch } from "@/lib/scoring/income";
 import { median, weightedMedian } from "@/lib/scoring/math";
-import type { ActivityRecord, FraudFlag, Transaction } from "@/lib/types";
+import type { ActivityRecord, DataSource, FraudFlag, Transaction } from "@/lib/types";
 import { emptyInput, tx } from "./helpers";
 
 /** Monthly client payments for the 12 months before 2026-10-01. */
@@ -92,21 +92,62 @@ describe("fraud: pre-application spike", () => {
   });
 });
 
-describe("fraud: income vs activity", () => {
-  const weeks = (hours: number): ActivityRecord[] =>
-    Array.from({ length: 16 }, (_, i) => ({ weekStart: addDays("2026-06-08", i * 7), sourceId: "p", hoursOnline: hours, tripsOrOrders: hours * 2, activeContracts: 0, rating: 4.8, distinctClients: 0 }));
+describe("Work Checker", () => {
+  const weeks = (hours: number, type: "delivery_platform" | "salon_sensors" = "delivery_platform", signals: (h: number) => Record<string, number> = (h) => ({ orders: h * 2.2, km: h * 7, completed: h * 2.2, assigned: h * 2.25 })): ActivityRecord[] =>
+    Array.from({ length: 16 }, (_, i) => ({ weekStart: addDays("2026-06-08", i * 7), sourceId: type === "salon_sensors" ? "sensors" : "p", hoursOnline: hours, tripsOrOrders: hours * 2, activeContracts: 0, rating: 4.8, distinctClients: 0, signals: signals(hours) }));
+  const courier = (src: Partial<DataSource> = {}): DataSource => ({ ...emptyInput().sources[0], id: "p", type: "delivery_platform", provider: "Wolt Partner", tier: 3, accountHolderName: undefined, optional: true, ...src });
 
-  it("flags implausible earnings per online hour", () => {
-    const input = emptyInput({ transactions: steadyIncome(Array(12).fill(4000)), activity: weeks(8) });
-    const income = analyzeIncome(input);
-    const flag = checkIncomeActivityMismatch(input, income, extractFeatures(input, income));
+  it("rates regular work that explains the income as strong (+50)", () => {
+    const input = emptyInput({ sources: [...emptyInput().sources, courier()], transactions: steadyIncome(Array(12).fill(1600)), activity: weeks(40) });
+    const r = computeScoreReport(input);
+    expect(r.workCheck.status).toBe("strong");
+    expect(r.workCheckPoints).toBe(50);
+    expect(r.fraudFlags.map((f) => f.type)).not.toContain("income_activity_mismatch");
+  });
+
+  it("flags work that cannot explain the income (−50 and a fraud flag)", () => {
+    const input = emptyInput({ sources: [...emptyInput().sources, courier()], transactions: steadyIncome(Array(12).fill(4000)), activity: weeks(8) });
+    const r = computeScoreReport(input);
+    expect(r.workCheck.status).toBe("mismatch");
+    expect(r.workCheckPoints).toBe(-50);
+    const flag = r.fraudFlags.find((f) => f.type === "income_activity_mismatch");
     expect(flag?.severity).toBe("high");
   });
 
-  it("accepts earnings consistent with hours", () => {
-    const input = emptyInput({ transactions: steadyIncome(Array(12).fill(1600)), activity: weeks(40) });
-    const income = analyzeIncome(input);
-    expect(checkIncomeActivityMismatch(input, income, extractFeatures(input, income))).toBeNull();
+  it("costs 30 points when no work app is shared, more than weak evidence", () => {
+    const r = computeScoreReport(emptyInput({ transactions: steadyIncome(Array(12).fill(1600)) }));
+    expect(r.workCheck.status).toBe("not_shared");
+    expect(r.workCheckPoints).toBe(-30);
+    expect(WORK_CHECK_POINTS.weak).toBeGreaterThan(WORK_CHECK_POINTS.not_shared);
+  });
+
+  it("catches failed authenticity checks (e.g. sensors far below bookings)", () => {
+    const base = emptyInput({ borrower: { id: "b", name: "Ana Test", workType: "beauty" } });
+    const booking: DataSource = { ...courier(), id: "p", type: "booking_app", provider: "Booksy" };
+    const sensor: DataSource = { ...courier(), id: "sensors", type: "salon_sensors", provider: "Salon sensors" };
+    const appts = weeks(36, "delivery_platform", (h) => ({ appointments: h / 1.3, noShows: 1, clients: h / 1.6 })).map((a) => ({ ...a, sourceId: "p" }));
+    const honest = weeks(0, "salon_sensors", () => ({ visitors: 36, hair: 15, nails: 10, otherServices: 3 }));
+    const fake = weeks(0, "salon_sensors", () => ({ visitors: 8, hair: 3, nails: 2, otherServices: 0 }));
+    const run = (sensorRows: ActivityRecord[]) =>
+      computeScoreReport({ ...base, sources: [...base.sources, booking, sensor], transactions: steadyIncome(Array(12).fill(2000)), activity: [...appts, ...sensorRows] }).workCheck;
+    expect(run(honest).evidence.find((e) => e.label === "Sensor services vs bookings")?.ok).toBe(true);
+    const bad = run(fake);
+    expect(bad.evidence.find((e) => e.label === "Sensor services vs bookings")?.ok).toBe(false);
+    expect(bad.status).not.toBe("strong");
+  });
+
+  it("has no effect for professions without a checker", () => {
+    const r = computeScoreReport(emptyInput({ borrower: { id: "b", name: "Ana Test", workType: "repair" }, transactions: steadyIncome(Array(12).fill(1600)) }));
+    expect(r.workCheck.status).toBe("not_supported");
+    expect(r.workCheckPoints).toBe(0);
+  });
+
+  it("defines six professions, each with apps and checks", () => {
+    expect(CHECKERS.map((c) => c.workType).sort()).toEqual(["beauty", "delivery", "designer", "developer", "taxi", "tutor"]);
+    for (const c of CHECKERS) {
+      expect(c.sources.length).toBeGreaterThanOrEqual(2);
+      expect(c.checks.length).toBeGreaterThanOrEqual(3);
+    }
   });
 });
 

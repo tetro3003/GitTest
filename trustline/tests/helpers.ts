@@ -26,6 +26,7 @@ export function emptyInput(over: Partial<ScoringInput> = {}): ScoringInput {
     activity: [],
     obligations: [],
     invoices: [],
+    workItems: [],
     asOf: "2026-10-01",
     ...over,
   };

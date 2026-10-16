@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, BadgeCheck, Download, Settings2, Sparkles } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Download, Radar, Settings2 } from "lucide-react";
 import { BandBadge, DecisionBadge } from "@/components/badges";
 import { ActivityIncomeIndexChart, WeeklyActivityChart } from "@/components/charts/activity-chart";
 import { IncomeBySourceChart } from "@/components/charts/income-chart";
@@ -12,6 +12,7 @@ import { FraudPanel } from "@/components/lender/fraud-panel";
 import { ReasonsTable } from "@/components/lender/reasons-table";
 import { TransactionsTable } from "@/components/lender/transactions-table";
 import { FeaturesCard } from "@/components/lender/features-card";
+import { WorkCheckPanel } from "@/components/lender/work-check-panel";
 import { ScoreGauge } from "@/components/score-gauge";
 import { CardSkeleton, ChartSkeleton, ErrorState } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { DECISION_THRESHOLDS } from "@/lib/config";
-import { formatMoney, WORK_TYPE_LABEL } from "@/lib/format";
+import { formatMoney, signed, WORK_TYPE_LABEL } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 import { SOURCE_TYPE_LABEL } from "@/lib/mock/sources";
 import { suggestDecision } from "@/lib/scoring";
@@ -89,9 +90,9 @@ export default function ApplicantDetail() {
           {report.bandCapped && (
             <p className="mt-3 text-center text-xs text-risk">Capped from {report.uncappedScore} by high-severity fraud flags</p>
           )}
-          {hasActivity && report.activityBoostApplied > 0 && (
+          {report.workCheck.status !== "not_supported" && (
             <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Sparkles className="size-3.5 text-positive" /> +{report.activityBoostApplied} activity boost · {report.scoreWithoutActivity} without
+              <Radar className="size-3.5 text-brand" /> Work Checker {signed(report.workCheckPoints)} · {report.scoreWithoutActivity} if not shared
             </p>
           )}
         </Card>
@@ -162,6 +163,8 @@ export default function ApplicantDetail() {
       ) : (
         <>
           <IncomeBySourceChart months={report.monthlyIncome} sources={report.incomeSources} verifiedMonthly={report.verifiedMonthlyIncome} />
+
+          <WorkCheckPanel result={report.workCheck} items={data.workItems} activity={activity} sources={borrower.connectedSources} />
 
           {hasActivity && (
             <div className="grid gap-4 xl:grid-cols-2">

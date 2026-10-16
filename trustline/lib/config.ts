@@ -39,13 +39,15 @@ export const DECISION_THRESHOLDS = {
 
 /** Monthly income benchmark per segment, used to score income level. */
 export const SEGMENT_BENCHMARKS: Record<
-  "taxi" | "delivery" | "it_freelance" | "tutor" | "repair" | "other",
+  "taxi" | "delivery" | "designer" | "developer" | "tutor" | "beauty" | "repair" | "other",
   { medianIncome: number; maxHourlyEarnings: number; label: string }
 > = {
   taxi: { medianIncome: 1800, maxHourlyEarnings: 28, label: "Taxi driver" },
   delivery: { medianIncome: 1400, maxHourlyEarnings: 24, label: "Courier" },
-  it_freelance: { medianIncome: 2800, maxHourlyEarnings: 120, label: "IT freelancer" },
+  designer: { medianIncome: 2600, maxHourlyEarnings: 90, label: "UI/UX designer" },
+  developer: { medianIncome: 3000, maxHourlyEarnings: 110, label: "Software developer" },
   tutor: { medianIncome: 1500, maxHourlyEarnings: 60, label: "Tutor" },
+  beauty: { medianIncome: 1600, maxHourlyEarnings: 45, label: "Beauty specialist" },
   repair: { medianIncome: 1700, maxHourlyEarnings: 45, label: "Repair worker" },
   other: { medianIncome: 1500, maxHourlyEarnings: 50, label: "Self-employed" },
 };

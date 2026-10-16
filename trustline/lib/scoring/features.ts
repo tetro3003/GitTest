@@ -2,6 +2,7 @@ import { SCORING_CONFIG } from "../config";
 import { addDays, lastMonths, monthKey } from "../dates";
 import type { Features, ScoringInput, Trend } from "../types";
 import type { IncomeAnalysis } from "./income";
+import { weeklyTotals } from "./activity";
 import { clamp, linearFit, mean, median, round, stdDev, sum, weightedMedian } from "./math";
 
 const ESSENTIAL = new Set(["rent", "utilities", "groceries", "fuel"]);
@@ -114,12 +115,12 @@ export function extractFeatures(input: ScoringInput, income: IncomeAnalysis): Fe
   const loanRepaymentOnTime = loans.length ? loans.filter((o) => o.paidDate !== null && o.paidDate <= addDays(o.dueDate, 5)).length / loans.length : null;
 
   // Work activity (only present when the borrower opted in).
-  const acts = [...input.activity].sort((a, b) => (a.weekStart < b.weekStart ? -1 : 1));
+  const acts = weeklyTotals(input.activity);
   const hasActivityData = acts.length >= 8;
   const last52 = acts.slice(-52);
-  const activeWeeksLast52 = last52.filter((a) => a.hoursOnline >= ACTIVE_WEEK_MIN_HOURS).length;
+  const activeWeeksLast52 = last52.filter((a) => a.hours >= ACTIVE_WEEK_MIN_HOURS).length;
   const activityConsistency = last52.length ? activeWeeksLast52 / last52.length : 0;
-  const hrs = acts.map((a) => a.hoursOnline);
+  const hrs = acts.map((a) => a.hours);
   const avgH = (xs: number[]) => (xs.length ? mean(xs) : 0);
   let activityTrend: Trend = "flat";
   if (hasActivityData) {

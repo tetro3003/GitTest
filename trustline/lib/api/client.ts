@@ -9,8 +9,16 @@ import type {
   MonitoringAlert,
   PersonaSummary,
   Share,
+  WorkItem,
   WorkType,
 } from "../types";
+
+/** What leaves the device after a lesson recording is analysed — never the audio itself. */
+export interface LessonRecordingSample {
+  name: string;
+  recordedMinutes: number;
+  speechMinutes: number;
+}
 
 /**
  * The contract between the UI and the backend. The mock adapter implements it
@@ -27,6 +35,12 @@ export interface ApiClient {
   connectSource(borrowerId: string, sourceId: string): Promise<DataSource>;
   disconnectSource(borrowerId: string, sourceId: string): Promise<DataSource>;
   getProfile(borrowerId: string): Promise<BorrowerProfile>;
+
+  /* Work Checker */
+  /** Choose whether one file / repo / lesson series is shared with the Work Checker. */
+  setWorkItemShared(borrowerId: string, itemId: string, shared: boolean): Promise<WorkItem[]>;
+  /** Submit an offline lesson recording; only its length and speech share are sent. */
+  uploadLessonRecording(borrowerId: string, sourceId: string, recording: LessonRecordingSample): Promise<WorkItem>;
 
   /* Sharing */
   listLenders(): Promise<Lender[]>;

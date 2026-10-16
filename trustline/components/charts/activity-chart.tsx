@@ -2,18 +2,19 @@
 
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatDate, formatMoney, formatMonth } from "@/lib/format";
+import { weeklyTotals } from "@/lib/scoring/activity";
 import type { ActivityRecord, MonthlyIncomePoint } from "@/lib/types";
 import { axisProps, ChartCard, Legend, TooltipBox } from "./chart-card";
 
 /** Weekly hours online — single series. */
 export function WeeklyActivityChart({ activity, weeks = 26, title = "Weekly work activity" }: { activity: ActivityRecord[]; weeks?: number; title?: string }) {
-  const rows = activity.slice(-weeks);
-  const data = rows.map((a) => ({ week: formatDate(a.weekStart).replace(/ \d{4}$/, ""), hours: a.hoursOnline, trips: a.tripsOrOrders, rating: a.rating }));
+  const rows = weeklyTotals(activity).slice(-weeks);
+  const data = rows.map((a) => ({ week: formatDate(a.weekStart).replace(/ \d{4}$/, ""), hours: a.hours, trips: a.trips, rating: a.rating }));
   return (
     <ChartCard
       title={title}
-      description={`Hours online per week, last ${rows.length} weeks.`}
-      table={{ columns: ["Week of", "Hours", "Trips / orders", "Rating"], rows: rows.map((a) => [formatDate(a.weekStart), a.hoursOnline, a.tripsOrOrders, a.rating ?? "—"]) }}
+      description={`Working hours per week from connected work apps, last ${rows.length} weeks.`}
+      table={{ columns: ["Week of", "Hours", "Units of work", "Rating"], rows: rows.map((a) => [formatDate(a.weekStart), a.hours, a.trips, a.rating ?? "—"]) }}
     >
       <div className="h-48" role="img" aria-label={`Bar chart of weekly hours online over the last ${rows.length} weeks`}>
         <ResponsiveContainer width="100%" height="100%">
@@ -30,8 +31,8 @@ export function WeeklyActivityChart({ activity, weeks = 26, title = "Weekly work
                   <TooltipBox
                     title={`Week of ${p.week}`}
                     items={[
-                      { label: "Hours online", value: String(p.hours), color: "var(--chart-3)" },
-                      { label: "Trips / orders", value: String(p.trips) },
+                      { label: "Working hours", value: String(p.hours), color: "var(--chart-3)" },
+                      ...(p.trips ? [{ label: "Trips / orders / lessons", value: String(p.trips) }] : []),
                       ...(p.rating ? [{ label: "Rating", value: p.rating.toFixed(2) }] : []),
                     ]}
                   />

@@ -1,6 +1,6 @@
-import { CURRENCY, SEGMENT_BENCHMARKS } from "../config";
+import { CURRENCY } from "../config";
 import { addDays, daysBetween, lastMonths, monthKey } from "../dates";
-import type { EarlyWarning, Features, FraudFlag, ScoringInput } from "../types";
+import type { EarlyWarning, Features, FraudFlag, ScoringInput, WorkCheckResult } from "../types";
 import type { IncomeAnalysis } from "./income";
 import { median, sum } from "./math";
 
@@ -11,9 +11,6 @@ export const FRAUD_RULES = {
   circularHighPairs: 3,
   spikeRatio: 1.8,
   spikeHighRatio: 3,
-  /** Implied hourly earnings above this multiple of the segment max are suspicious. */
-  mismatchMediumMultiple: 2,
-  mismatchHighMultiple: 3,
   invoiceGraceDays: 30,
   invoiceMatchWindowDays: 60,
   invoiceAmountTolerance: 0.02,
@@ -56,25 +53,15 @@ export function checkIncomeSpike(input: ScoringInput, income: IncomeAnalysis): F
   };
 }
 
-/** Income vs activity: claimed earnings per online hour far above what the segment can earn. */
-export function checkIncomeActivityMismatch(input: ScoringInput, income: IncomeAnalysis, f: Features): FraudFlag | null {
-  if (!f.hasActivityData) return null;
-  const months = income.months.slice(-3);
-  const gross = sum(months.map((m) => m.gross));
-  const hours = sum(months.map((m) => m.hours ?? 0));
-  const maxHourly = SEGMENT_BENCHMARKS[input.borrower.workType].maxHourlyEarnings;
-  if (gross <= 0) return null;
-  const implied = hours > 0 ? gross / hours : Infinity;
-  if (implied <= FRAUD_RULES.mismatchMediumMultiple * maxHourly) return null;
-  const monthSet = new Set(months.map((m) => m.month));
+/** Income vs work: raised when the Work Checker finds the work can't explain the income. */
+export function checkIncomeActivityMismatch(input: ScoringInput, income: IncomeAnalysis, work: WorkCheckResult): FraudFlag | null {
+  if (work.status !== "mismatch") return null;
+  const monthSet = new Set(income.months.slice(-3).map((m) => m.month));
   return {
     type: "income_activity_mismatch",
-    severity: implied > FRAUD_RULES.mismatchHighMultiple * maxHourly ? "high" : "medium",
+    severity: "high",
     title: "Income doesn't match work activity",
-    explanation:
-      hours > 0
-        ? `Claimed income of ${money(gross)} over 3 months but only ${Math.round(hours)} hours online — ${money(implied)}/hour vs a realistic max of ${money(maxHourly)}/hour for this segment.`
-        : `Claimed income of ${money(gross)} over 3 months with no recorded work activity.`,
+    explanation: `Work Checker (${work.sourcesUsed.join(", ")}): ${work.activeHoursPerWeek} h/week can explain ${money(work.explainedIncome?.low ?? 0)}–${money(work.explainedIncome?.high ?? 0)} a month, far below the income claimed.`,
     transactionIds: input.transactions
       .filter((t) => t.direction === "in" && monthSet.has(monthKey(t.date)) && t.category !== "platform_payout" && t.category !== "transfer_self" && t.amount > 300)
       .map((t) => t.id),
@@ -121,11 +108,11 @@ export function checkNameMismatch(input: ScoringInput, income: IncomeAnalysis): 
   };
 }
 
-export function runFraudChecks(input: ScoringInput, income: IncomeAnalysis, f: Features): FraudFlag[] {
+export function runFraudChecks(input: ScoringInput, income: IncomeAnalysis, work: WorkCheckResult): FraudFlag[] {
   return [
     checkCircularMoney(income),
     checkIncomeSpike(input, income),
-    checkIncomeActivityMismatch(input, income, f),
+    checkIncomeActivityMismatch(input, income, work),
     checkUnmatchedInvoices(input),
     checkNameMismatch(input, income),
   ].filter((x): x is FraudFlag => x !== null);

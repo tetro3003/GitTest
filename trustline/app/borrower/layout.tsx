@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Gauge, Link2, Send, ShieldCheck } from "lucide-react";
+import { Gauge, Link2, Radar, Send, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getPersona } from "@/lib/mock/personas";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/borrower/profile", label: "Profile", icon: Gauge },
   { href: "/borrower/connect", label: "Sources", icon: Link2 },
+  { href: "/borrower/work", label: "Work", icon: Radar },
   { href: "/borrower/share", label: "Share", icon: Send },
   { href: "/borrower/consents", label: "My data", icon: ShieldCheck },
 ];
@@ -59,7 +60,7 @@ export default function BorrowerLayout({ children }: { children: React.ReactNode
 
       {!inFlow && (
         <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur sm:hidden" aria-label="Borrower">
-          <ul className="grid grid-cols-4">
+          <ul className="grid grid-cols-5">
             {NAV.map((n) => (
               <li key={n.href}>
                 <Link

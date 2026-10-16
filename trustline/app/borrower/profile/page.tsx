@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Info, Lightbulb, Link2, Send, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowRight, Info, Lightbulb, Link2, Radar, Send } from "lucide-react";
+import { WorkStatusBadge } from "@/components/work-check";
+import { cn } from "@/lib/utils";
 import { BandBadge } from "@/components/badges";
 import { BorrowerIncomeChart } from "@/components/charts/income-chart";
 import { WeeklyActivityChart } from "@/components/charts/activity-chart";
@@ -100,20 +102,18 @@ export default function Profile() {
         </Card>
       </div>
 
-      {activityShared ? (
-        <Card className="flex items-center gap-3 border-positive/30 bg-positive-soft p-4">
-          <Sparkles className="size-5 shrink-0 text-positive" />
-          <p className="text-sm">
-            Sharing your work activity added <strong>+{report.activityBoostApplied} points</strong>
-            {report.scoreWithoutActivity !== report.score && <> (without it you&apos;d be at {report.scoreWithoutActivity})</>}.
-          </p>
-        </Card>
-      ) : (
-        <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <Sparkles className="size-5 shrink-0 text-brand" />
-          <p className="flex-1 text-sm">Share your work-platform activity to earn up to <strong>+50 points</strong>. It can never lower your score.</p>
+      {report.workCheck.status !== "not_supported" && (
+        <Card className={cn("flex flex-col gap-3 p-4 sm:flex-row sm:items-center", report.workCheck.points > 0 ? "border-positive/30 bg-positive-soft" : "border-warning/40 bg-warning-soft")}>
+          <Radar className={cn("size-5 shrink-0", report.workCheck.points > 0 ? "text-positive" : "text-warning-strong")} />
+          <div className="flex-1 space-y-1 text-sm">
+            <WorkStatusBadge status={report.workCheck.status} points={report.workCheck.points} />
+            <p>
+              {report.workCheck.summary}
+              {report.workCheck.points > 0 && report.scoreWithoutActivity !== report.score && <> Without it you&apos;d be at {report.scoreWithoutActivity}.</>}
+            </p>
+          </div>
           <Button asChild size="sm" variant="outline">
-            <Link href="/borrower/connect">Add activity</Link>
+            <Link href="/borrower/work">Open Work Checker</Link>
           </Button>
         </Card>
       )}
@@ -139,7 +139,7 @@ export default function Profile() {
 
       <BorrowerIncomeChart months={report.features.tenureMonths < 12 ? report.monthlyIncome.slice(-report.features.tenureMonths) : report.monthlyIncome} />
 
-      {activityShared && activity.length > 0 && <WeeklyActivityChart activity={activity} weeks={20} title="Your work activity" />}
+      {activityShared && activity.length > 0 && <WeeklyActivityChart activity={activity} weeks={20} title="Your working hours" />}
 
       {report.improvementTips.length > 0 && (
         <Card>

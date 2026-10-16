@@ -14,6 +14,7 @@ import BorrowerLayout from "@/app/borrower/layout";
 import Onboarding from "@/app/borrower/onboarding/page";
 import ConnectSources from "@/app/borrower/connect/page";
 import Analyzing from "@/app/borrower/analyzing/page";
+import WorkChecker from "@/app/borrower/work/page";
 import Profile from "@/app/borrower/profile/page";
 import ShareWithLender from "@/app/borrower/share/page";
 import Consents from "@/app/borrower/consents/page";
@@ -33,6 +34,7 @@ const ROUTES: Route[] = [
   { pattern: "/borrower/onboarding", page: () => <Onboarding />, layout: "borrower" },
   { pattern: "/borrower/connect", page: () => <ConnectSources />, layout: "borrower" },
   { pattern: "/borrower/analyzing", page: () => <Analyzing />, layout: "borrower" },
+  { pattern: "/borrower/work", page: () => <WorkChecker />, layout: "borrower" },
   { pattern: "/borrower/profile", page: () => <Profile />, layout: "borrower" },
   { pattern: "/borrower/share", page: () => <ShareWithLender />, layout: "borrower" },
   { pattern: "/borrower/consents", page: () => <Consents />, layout: "borrower" },

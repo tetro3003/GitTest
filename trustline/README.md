@@ -102,12 +102,35 @@ ScoringInput (only data from connected sources)
 | Existing loans on time / late | +30 / −50 |
 | Gambling share of spending | 0 … −80 |
 | Income history length | −40 (<6m) / −15 (<12m) / +10 (24m+) |
-| **Activity boost (opt-in)** | 0 … +50, **never negative**. A decline raises an early warning instead |
+| **Work Checker** (see below) | strong +50 · moderate +20 · weak −15 · **not shared −30** · mismatch −50 (+ fraud flag) · profession not covered 0 |
 
 - **Verified income** is the 6-month *weighted* median of verified inflows. The last 2 months carry half weight (pre-application inflation guard). Self-transfers, suspected circular P2P money and accounts not held by the KYC'd person are excluded. Seasonal earners use the 12-month average.
 - **Recommended max payment** = `paymentToFreeCashFlowRatio` (40%) × free cash flow.
 - **Bands**: A ≥ 740, B 670–739, C 600–669, D 530–599, E < 530.
 - **Fraud checks**: circular money (±15% within 7 days), pre-application spike (> 1.8× prior 6-month median), income vs activity (implied ₾/hour vs segment max), invoices without matching payment, account-holder name mismatch. Any **high** flag caps the score at 599 (band D).
+
+## Work Checker (`lib/checker/`)
+
+A profession-specific check that the work behind the income is real and big enough. Each profession has its own apps, signals and authenticity checks ([`profiles.ts`](lib/checker/profiles.ts)):
+
+| Profession | Apps | Example checks |
+|---|---|---|
+| Taxi driver | Bolt Driver, Uber Driver | trips per hour 1–3, km per trip, acceptance rate |
+| Courier | Wolt Partner, Glovo Courier | orders per hour 1–4, completion rate, km per order |
+| UI/UX designer | Figma, Adobe Photoshop, Adobe Illustrator | design days per week, session length, client comments on files |
+| Software developer | GitHub, Jira | commit days per week, reviews by other people, no commit spam |
+| Tutor | Zoom, Google Meet, offline lesson audio | lesson length 30–120 min, ≥ 5 students, ≥ 60% speech in recordings |
+| Beauty specialist | Booksy, Fresha, salon sensors (pilot) | appointments per hour, no-show rate, sensor-counted services vs bookings |
+
+[`evaluate.ts`](lib/checker/evaluate.ts) works out:
+1. **Hours per week** and **consistency**: the share of weeks actually worked. Seasonal earners are judged on their working season.
+2. **Explained income**: hours × 4.33 × the profession's realistic ₾/hour range.
+3. **Authenticity checks** on the raw signals.
+4. **Verdict → points.** Not sharing (−30) costs more than weak evidence (−15), so hiding data never pays. If the claimed income is above 1.5× what the work can explain, the result is a mismatch: −50 points plus a high-severity fraud flag.
+
+Borrowers choose exactly which Figma files, repositories, Jira projects or lesson series the checker may see (`/borrower/work`). Lesson audio is analysed **in the browser** ([`audio.ts`](lib/checker/audio.ts), short-frame energy vs. an adaptive noise floor). Only the length and the minutes of speech are sent, never the audio. Salon sensors (door counter plus station sensors) give anonymous yearly counts of visitors and services.
+
+All integrations are simulated, with data shaped like the real exports and APIs. Real connections come with the backend: Figma REST API (versions and comments), a GitHub App, Jira Cloud, Zoom and Google Calendar metadata, Booksy and Fresha, partner exports from Bolt, Uber, Wolt and Glovo, and a Creative Cloud plugin for Photoshop and Illustrator.
 
 ## Mock adapter & switching to the live API
 
@@ -115,7 +138,7 @@ The UI only talks to `api` from [`lib/api/index.ts`](lib/api/index.ts), which im
 
 ```
 getBorrower · startOnboarding · submitKyc · setWorkType · listSources · connectSource ·
-disconnectSource · getProfile · listLenders · shareWithLender · listShares · revokeShare ·
+disconnectSource · getProfile · setWorkItemShared · uploadLessonRecording · listLenders · shareWithLender · listShares · revokeShare ·
 getApplicants · getApplicant · getMonitoring · listPersonas (demo) · resetDemo (demo)
 ```
 
@@ -137,25 +160,28 @@ No page or component changes are needed.
 
 | Persona | Story | Engine result |
 |---|---|---|
-| **Giorgi** (taxi) | 2 years on RideCo, ~45 h/week, bills on time | **767 · A**, approve |
-| **Nino** (IT freelancer) | 3 clients + FreelanceHub, income growing, uneven months, a few late laptop-loan payments | **720 · B**, trend growing |
-| **Levan** (tutor) | Strong Sep–May, near zero Jul–Aug | **628 · C**, seasonality detected |
-| **Sandro** (courier) | Only 4 months of income, 42 h every week | **568 · D without activity → 618 · C with it** |
-| **Dato** (fraud) | Circular P2P spike, unpaid invoices, low activity, third-party account | All 5 flags, **653 capped to 599 · D**, decline |
+| **Giorgi** (taxi) | 2 years on Bolt, ~45 h/week, bills on time | **767 · A**, Work Checker strong |
+| **Nino** (developer) | 3 clients + FreelanceHub, income growing; GitHub + Jira | **716 · B** |
+| **Levan** (tutor) | Zoom + home lessons (audio); near zero in Jul–Aug | **645 · C**, seasonality recognised |
+| **Sandro** (courier) | Only 4 months of income, 42 h every week on Wolt | **538 · D without work data → 618 · C with it** |
+| **Dato** (fraud) | Circular P2P spike, unpaid invoices, 7 h/week on Glovo | All 5 flags, Work Checker mismatch (−50), **588 · D**, decline |
+| **Mariam** (UI/UX designer) | Figma, Photoshop, Illustrator for 3 agencies | **791 · A** |
+| **Keti** (beauty) | Booksy bookings confirmed by salon sensors | **767 · A** |
 
-Seven background applicants fill out the lender table and monitoring. Tamar, for example, shows "activity down 35% over 4 weeks".
+Six background applicants fill out the lender table and monitoring. Tamar, for example, shows "activity down 35% over 4 weeks".
 
 ## 3-minute demo script
 
 1. **Problem (20s).** On `/`, read the pitch line: "Self-employed people earn every day but can't prove it to a bank."
-2. **The money shot (40s).** Open `/demo`: five people, one engine, every number computed from transactions. Point out Sandro's activity boost (D → C) and Dato's red flags.
+2. **The money shot (40s).** Open `/demo`: seven people, one engine, every number computed from transactions. Point out Sandro (D → C with work data), Keti's salon sensors and Dato's red flags.
 3. **Borrower flow (60s).** Open **Demo** (bottom right), pick **Sandro**, then **Start onboarding**.
    - Continue, add ID and selfie, verify, choose Courier.
-   - Connect **Black Sea Bank** and **CityPower & Water** only, then *Build my profile*. The analysis runs and the result is **568 · D**.
-   - Go to **Sources**, connect **DeliverGo** (note "Optional — can only improve your score"), then return to **Profile**: **618 · C**, with "Sharing your work activity added +50 points".
+   - Connect **Black Sea Bank** and **CityPower & Water** only, then *Build my profile*. The analysis runs and the result is **538 · D**; the Work Checker says "not shared −30".
+   - Open **Work**, connect **Wolt Partner**, then return to **Profile**: **618 · C**, Work Checker strong +50.
+   - Switch to **Mariam** and open **Work**: untick Figma files to show the borrower controls exactly what is checked. Switch to **Levan** and upload a lesson recording: it is measured on the device.
    - **Share** with DriveLease: consent screen, then the share code.
 4. **Lender view (60s).** In the demo panel switch to **Lender** and open **Dato**.
-   - Score capped from 653 to 599. The hatched bars show the excluded "income".
+   - Work Checker panel: 7 h/week can explain at most ₾517 a month, yet ₾942 came in, so mismatch, −50. The hatched bars show the excluded "income".
    - Waterfall: the fraud cap step. Fraud panel: expand the circular transfers to show the actual money going back and forth within days.
    - Click the decision settings icon and move the thresholds; the suggestion updates live.
    - *Download report* gives the printable PDF.

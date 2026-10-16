@@ -6,8 +6,10 @@ import type {
   ISODate,
   MonthKey,
   ObligationPayment,
+  SourceType,
   Transaction,
   TransactionCategory,
+  WorkItem,
 } from "../types";
 import { createRng, type Rng } from "./rng";
 
@@ -34,8 +36,19 @@ export interface WeekCtx {
   rng: Rng;
 }
 
+export interface ActivitySourceSpec {
+  id: string;
+  type: SourceType;
+  provider: string;
+  /** Share of weekly hours logged in this tool (0 for signal-only sources like sensors). */
+  share: number;
+  /** Things the user can choose to share (files, repos, lesson series…), with relative weight. */
+  items?: { name: string; weight: number; shared?: boolean }[];
+}
+
 export interface ActivitySpec {
-  sourceId: string;
+  /** Work tools that log this activity. The first one carries the legacy trip/rating fields. */
+  sources: ActivitySourceSpec[];
   /** Weeks of activity history ending at as-of. */
   weeks: number;
   hours: (ctx: WeekCtx) => number;
@@ -125,6 +138,7 @@ export interface PersonaSpec {
 export interface GeneratedData {
   transactions: Transaction[];
   activity: ActivityRecord[];
+  workItems: WorkItem[];
   obligations: ObligationPayment[];
   invoices: Invoice[];
 }
@@ -175,25 +189,48 @@ export function generatePersonaData(id: string, spec: PersonaSpec, asOf: ISODate
 
   /* ---------- Activity (weekly) ---------- */
   const activity: ActivityRecord[] = [];
+  const workItems: WorkItem[] = [];
   const hoursByWeek = new Map<ISODate, number>();
   if (spec.activity) {
     const a = spec.activity;
+    // Separate stream so profession signals never shift the financial data.
+    const srng = createRng(spec.seed ^ 0x51f15e);
     const lastWeek = weekStart(addDays(asOf, -7));
     for (let k = a.weeks - 1; k >= 0; k--) {
       const ws = addDays(lastWeek, -7 * k);
       const ctx: WeekCtx = { weekStart: ws, month: monthKey(ws), w: a.weeks - 1 - k, weeksAgo: k, rng };
       const hours = Math.max(0, Math.round(a.hours(ctx) * 10) / 10);
       hoursByWeek.set(ws, hours);
-      activity.push({
-        weekStart: ws,
-        sourceId: a.sourceId,
-        hoursOnline: hours,
-        tripsOrOrders: Math.round(hours * a.tripsPerHour * rng.range(0.9, 1.1)),
-        activeContracts: a.activeContracts ? Math.max(0, Math.round(a.activeContracts(ctx))) : 0,
-        rating: a.rating && hours > 0 ? Math.round(Math.min(5, a.rating + rng.normal(0, 0.04)) * 100) / 100 : null,
-        distinctClients: a.distinctClients
-          ? Math.max(0, Math.round(a.distinctClients(ctx)))
-          : Math.round(hours * a.tripsPerHour * 0.9),
+      const trips = Math.round(hours * a.tripsPerHour * rng.range(0.9, 1.1));
+      const contracts = a.activeContracts ? Math.max(0, Math.round(a.activeContracts(ctx))) : 0;
+      const rating = a.rating && hours > 0 ? Math.round(Math.min(5, a.rating + rng.normal(0, 0.04)) * 100) / 100 : null;
+      const clients = a.distinctClients ? Math.max(0, Math.round(a.distinctClients(ctx))) : Math.round(hours * a.tripsPerHour * 0.9);
+      for (const src of a.sources) {
+        const h = Math.round(hours * src.share * 10) / 10;
+        activity.push({
+          weekStart: ws,
+          sourceId: src.id,
+          hoursOnline: h,
+          tripsOrOrders: Math.round(trips * src.share),
+          activeContracts: contracts,
+          rating,
+          distinctClients: Math.round(clients * (src.share || 1)),
+          signals: professionSignals(src, h, hours, clients, srng),
+        });
+      }
+    }
+    // Shareable items: each gets its weight's share of the source's last 12 weeks.
+    for (const src of a.sources) {
+      if (!src.items) continue;
+      const recent = activity.filter((r) => r.sourceId === src.id).slice(-12);
+      const total: Record<string, number> = { hours: recent.reduce((x, r) => x + r.hoursOnline, 0) };
+      for (const r of recent) for (const [key, v] of Object.entries(r.signals)) total[key] = (total[key] ?? 0) + v;
+      const wsum = src.items.reduce((x, i) => x + i.weight, 0);
+      src.items.forEach((it, i) => {
+        const w = it.weight / wsum;
+        const stats: Record<string, number> = {};
+        for (const [key, v] of Object.entries(total)) stats[key] = key === "activeDays" ? Math.min(Math.round(v), Math.round(v * w * 2)) : Math.round(v * w * 10) / 10;
+        workItems.push({ id: `${src.id}-item-${i + 1}`, sourceId: src.id, name: it.name, weight: w, shared: it.shared ?? true, lastActivity: addDays(asOf, -1 - srng.int(0, 9)), stats });
       });
     }
   }
@@ -397,5 +434,48 @@ export function generatePersonaData(id: string, spec: PersonaSpec, asOf: ISODate
     });
   }
 
-  return { transactions, activity, obligations: obligations.filter((o) => o.dueDate < asOf), invoices };
+  return { transactions, activity, workItems, obligations: obligations.filter((o) => o.dueDate < asOf), invoices };
+}
+
+/** Raw, profession-specific signals for one week in one tool. Shapes mirror what each app exports. */
+function professionSignals(src: ActivitySourceSpec, hours: number, totalHours: number, clients: number, r: Rng): Record<string, number> {
+  const n = (x: number) => Math.max(0, Math.round(x));
+  switch (src.type) {
+    case "ride_hailing": {
+      const trips = n(hours * r.range(1.5, 1.9));
+      return { trips, km: n(trips * r.range(6, 10)), accepted: trips, offered: n(trips / r.range(0.84, 0.94)) };
+    }
+    case "delivery_platform": {
+      const orders = n(hours * r.range(2, 2.4));
+      return { orders, km: n(orders * r.range(2.5, 4.5)), completed: orders, assigned: n(orders / r.range(0.95, 0.99)) };
+    }
+    case "design_tool":
+      return hours <= 0
+        ? {}
+        : { sessions: n(hours / r.range(1.3, 2)), versions: n(hours / r.range(2, 3)), activeDays: Math.min(7, n(hours / 6 + r.range(0, 1.5))), clientComments: n(r.range(0, 2.2) * Math.min(1, src.share * 2)), exports: n(hours / 8) };
+    case "dev_tool":
+      return src.provider === "Jira"
+        ? { issuesResolved: n(hours / r.range(4, 6)) }
+        : hours <= 0
+          ? {}
+          : { commits: n(hours * r.range(0.4, 0.8)), prsMerged: n(hours / r.range(7, 10)), reviewsByOthers: n(hours / r.range(7, 11)), activeDays: Math.min(7, n(hours / 5 + r.range(0, 1))) };
+    case "video_lessons":
+      return hours <= 0 ? {} : { lessons: n(hours / r.range(0.9, 1.1)), students: Math.max(1, n(clients * r.range(0.5, 0.7))) };
+    case "lesson_audio": {
+      if (hours <= 0) return {};
+      const recorded = n(hours * 60 * r.range(0.9, 1));
+      return { recordings: Math.max(1, n(hours / 1.5)), recordedMinutes: recorded, speechMinutes: n(recorded * r.range(0.68, 0.84)), lessons: n(hours), students: Math.max(1, n(clients * 0.4)) };
+    }
+    case "booking_app": {
+      const appointments = n(hours / r.range(1.1, 1.5));
+      return { appointments, noShows: n(appointments * r.range(0.02, 0.1)), clients: n(appointments * r.range(0.7, 0.9)) };
+    }
+    case "salon_sensors": {
+      // Counts what the booked appointments imply, with walk-ins and companions.
+      const appts = totalHours / 1.3;
+      return { visitors: n(appts * r.range(1.2, 1.5)), hair: n(appts * r.range(0.5, 0.6)), nails: n(appts * r.range(0.3, 0.4)), otherServices: n(appts * r.range(0.1, 0.2)) };
+    }
+    default:
+      return {};
+  }
 }

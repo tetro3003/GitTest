@@ -12,9 +12,8 @@ function reason(id: string, label: string, impact: number, detail: string, plain
 
 export interface ScorecardResult {
   reasons: ScoreReason[];
-  /** Sum of all non-activity reasons. */
+  /** Sum of all financial reasons (everything except the Work Checker). */
   coreImpact: number;
-  activityBoost: number;
 }
 
 /**
@@ -205,26 +204,7 @@ export function applyScorecard(f: Features, workType: WorkType): ScorecardResult
 
   const coreImpact = reasons.reduce((a, r) => a + r.impact, 0);
 
-  // 12. Activity boost — opt-in, never negative.
-  let activityBoost = 0;
-  if (f.hasActivityData) {
-    const consistencyPts = scale(f.activityConsistency, 0.5, 0.95, 0, 35);
-    const trendPts = f.activityTrend === "declining" ? 0 : 15;
-    activityBoost = Math.round(clamp(consistencyPts + trendPts, 0, 50));
-    reasons.push(
-      reason(
-        "activity_boost",
-        "Work activity boost (opt-in)",
-        activityBoost,
-        `${f.activeWeeksLast52} active weeks · ${pct(f.activityConsistency)} of weeks active · activity ${f.activityTrend}`,
-        activityBoost > 0
-          ? `Your consistent work activity added ${activityBoost} points. Sharing it can only help.`
-          : "Your work activity is shared; it never lowers your score.",
-      ),
-    );
-  }
-
-  return { reasons, coreImpact, activityBoost };
+  return { reasons, coreImpact };
 }
 
 export function clampScore(x: number): number {

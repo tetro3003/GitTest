@@ -22,7 +22,7 @@ function exampleResponse() {
     verifiedMonthlyIncome: r.verifiedMonthlyIncome,
     recommendedMaxPayment: r.recommendedMaxPayment,
     currency: "GEL",
-    activityBoostApplied: r.activityBoostApplied,
+    workCheck: { status: r.workCheck.status, points: r.workCheck.points, profession: r.workCheck.profession, sources: r.workCheck.sourcesUsed, explainedIncome: r.workCheck.explainedIncome, evidence: r.workCheck.evidence.slice(0, 3) },
     reasons: r.reasons.filter((x) => x.impact !== 0).slice(0, 4).map(({ id, label, impact, detail }) => ({ id, label, impact, detail })),
     fraudFlags: r.fraudFlags,
     earlyWarnings: r.earlyWarnings,

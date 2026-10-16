@@ -1,6 +1,6 @@
 import { DEMO_AS_OF } from "../config";
 import { addDays } from "../dates";
-import type { ApplicationStatus, Consent, DataSource, KycStatus, Lender, Share, SourceStatus, WorkType } from "../types";
+import type { ApplicationStatus, Consent, DataSource, KycStatus, Lender, Share, SourceStatus, WorkItem, WorkType } from "../types";
 import { PERSONAS } from "./personas";
 
 /**
@@ -14,6 +14,10 @@ export interface BorrowerState {
   kycStatus: KycStatus;
   applicationStatus: ApplicationStatus;
   sources: Record<string, { status: SourceStatus; connectedAt: string | null }>;
+  /** Per work item: shared with the Work Checker or not (overrides the default). */
+  items: Record<string, boolean>;
+  /** Lesson recordings the borrower uploaded and we measured. */
+  uploads: WorkItem[];
 }
 
 export interface DemoDb {
@@ -25,7 +29,7 @@ export interface DemoDb {
 }
 
 const STORAGE_KEY = "trustline-demo-db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export const LENDERS: Lender[] = [
   { id: "city-bank", name: "City Bank", type: "bank", description: "Consumer and auto loans up to ₾30,000" },
@@ -44,6 +48,8 @@ function seedDb(): DemoDb {
       kycStatus: p.borrower.kycStatus,
       applicationStatus: p.borrower.applicationStatus,
       sources: Object.fromEntries(p.spec.sources.map((s) => [s.id, { status: s.status, connectedAt: s.connectedAt }])),
+      items: {},
+      uploads: [],
     };
   }
   const shares: Share[] = PERSONAS.map((p, i) => {

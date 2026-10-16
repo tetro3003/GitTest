@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Briefcase, ShieldAlert, ShieldCheck, Sparkles, User } from "lucide-react";
+import { Briefcase, Radar, ShieldAlert, ShieldCheck, User } from "lucide-react";
+import { WorkStatusBadge } from "@/components/work-check";
 import { BandBadge, DecisionBadge } from "@/components/badges";
 import { Logo } from "@/components/logo";
 import { ScoreGauge } from "@/components/score-gauge";
@@ -41,15 +42,14 @@ export default function DemoOverview() {
       </header>
       <main className="mx-auto max-w-[1500px] px-5 pb-16">
         <div className="mb-8 max-w-3xl">
-          <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Five self-employed people. One engine.</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Seven self-employed people. One engine.</h1>
           <p className="mt-2 text-lg text-muted-foreground">Every number below is computed live from 4–24 months of synthetic transactions and work activity — nothing is hard-coded.</p>
         </div>
 
         {error && <ErrorState error={error} onRetry={reload} />}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-          {loading && !data && Array.from({ length: 5 }, (_, i) => <CardSkeleton key={i} lines={8} />)}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          {loading && !data && Array.from({ length: 7 }, (_, i) => <CardSkeleton key={i} lines={8} />)}
           {data?.map(({ borrower, report, story, expected }) => {
-            const boost = report.score - report.scoreWithoutActivity;
             const flagged = report.fraudFlags.length > 0;
             return (
               <Card key={borrower.id} className={cn("flex flex-col p-5", flagged && "border-risk/40")}>
@@ -74,21 +74,20 @@ export default function DemoOverview() {
                   </div>
                 </dl>
                 <div className="mt-3 space-y-2 text-sm">
-                  {boost > 0 ? (
-                    <p className="flex items-center gap-1.5">
-                      <Sparkles className="size-4 shrink-0 text-positive" />
-                      Activity boost: {report.scoreWithoutActivity} <ArrowRight className="size-3" /> {report.score}
-                      {bandFor(report.scoreWithoutActivity) !== report.band && (
-                        <span className="text-muted-foreground">
-                          ({bandFor(report.scoreWithoutActivity)} → {report.band})
-                        </span>
-                      )}
-                    </p>
-                  ) : report.bandCapped ? (
+                  {report.workCheck.status !== "not_supported" && (
+                    <div className="space-y-1">
+                      <WorkStatusBadge status={report.workCheck.status} points={report.workCheck.points} />
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Radar className="size-3.5 shrink-0 text-brand" /> {report.workCheck.sourcesUsed.join(" + ") || "No work app"} · without work data {report.scoreWithoutActivity}
+                        {bandFor(report.scoreWithoutActivity) !== report.band && <> ({bandFor(report.scoreWithoutActivity)})</>}
+                      </p>
+                    </div>
+                  )}
+                  {report.bandCapped && (
                     <p className="flex items-center gap-1.5 text-risk">
                       <ShieldAlert className="size-4 shrink-0" /> Capped from {report.uncappedScore} to {report.score}
                     </p>
-                  ) : null}
+                  )}
                   {flagged ? (
                     <ul className="space-y-1">
                       {report.fraudFlags.map((f) => (

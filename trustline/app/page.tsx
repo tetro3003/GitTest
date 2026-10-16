@@ -4,14 +4,15 @@ import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { CURRENCY, PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/config";
+import { CHECKERS } from "@/lib/checker/profiles";
 
 const STEPS = [
   { icon: Link2, title: "Connect what you choose", body: "Bank accounts, ride-hailing, delivery and freelance platforms, bills. Read-only, with a clear expiry." },
-  { icon: Sparkles, title: "We verify & explain", body: "Transactions are categorized, income is verified conservatively and work activity is checked against earnings." },
+  { icon: Sparkles, title: "We verify & explain", body: "Transactions are categorized, income is verified conservatively, and the Work Checker confirms the work behind it in Bolt, Figma, GitHub, Zoom, Booksy and more." },
   { icon: FileCheck2, title: "Share a bank-ready profile", body: "A score from 300–850, verified monthly income and the payment you can afford — with every reason shown." },
 ];
 
-const SEGMENTS = ["Taxi drivers", "Couriers", "IT freelancers", "Tutors", "Repair workers"];
+const SEGMENTS = ["Taxi drivers", "Couriers", "UI/UX designers", "Developers", "Tutors", "Beauty specialists"];
 
 export default function Landing() {
   return (
@@ -84,7 +85,7 @@ export default function Landing() {
                 {[
                   ["+79", "Very steady monthly income"],
                   ["+50", "Bills always paid on time"],
-                  ["+50", "45 hrs/week on RideCo for 2 years (opt-in)"],
+                  ["+50", "Work Checker: 45 h/week on Bolt confirms income"],
                   ["−20", "91% of income from one platform"],
                 ].map(([pts, txt]) => (
                   <li key={txt} className="flex items-center justify-between gap-3 rounded-lg bg-muted/60 px-3 py-2">
@@ -137,12 +138,37 @@ export default function Landing() {
           </ol>
         </section>
 
+        {/* Work Checker */}
+        <section className="mx-auto max-w-6xl px-5 pb-20">
+          <div className="mb-8 max-w-2xl">
+            <h2 className="font-display text-3xl font-bold tracking-tight">Work Checker: proof the work is real</h2>
+            <p className="mt-2 text-muted-foreground">
+              Every profession leaves its own trail. We read it from the apps people already work in and check that the work is big enough to explain the income.
+            </p>
+          </div>
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {CHECKERS.map((c) => (
+              <li key={c.workType} className="rounded-2xl border bg-card p-5">
+                <p className="font-display text-lg font-semibold">{c.label}</p>
+                <p className="mt-1 text-sm text-brand">{c.sources.map((x) => x.provider).join(" · ")}</p>
+                <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
+                  {c.checks.map((k) => (
+                    <li key={k.label}>
+                      {k.label} <span className="text-foreground">({k.target})</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* Privacy */}
         <section className="mx-auto max-w-6xl px-5 pb-20">
           <div className="grid gap-8 rounded-3xl bg-brand px-6 py-12 text-brand-foreground md:grid-cols-[1.2fr_1fr] md:px-12">
             <div>
               <h2 className="font-display text-3xl font-bold tracking-tight">Your data, your control.</h2>
-              <p className="mt-3 max-w-lg opacity-90">Share only what you choose, revoke anytime. Work-activity data is an opt-in boost: it can raise your score, and not sharing it never lowers it.</p>
+              <p className="mt-3 max-w-lg opacity-90">Share only what you choose, revoke anytime. Pick exactly which files, repositories or lessons the Work Checker can see; lesson audio is measured on your phone and never uploaded.</p>
             </div>
             <ul className="space-y-3 text-sm">
               {[

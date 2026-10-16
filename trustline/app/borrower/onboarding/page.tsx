@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bike, Car, Check, CreditCard, GraduationCap, Laptop, Loader2, ScanFace, Wrench, MoreHorizontal } from "lucide-react";
+import { ArrowRight, Bike, Car, Check, CreditCard, GraduationCap, Laptop, Loader2, ScanFace, Wrench, MoreHorizontal, PenTool, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { useDemo } from "@/lib/store";
 import type { WorkType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const WORK_ICONS: Record<WorkType, typeof Car> = { taxi: Car, delivery: Bike, it_freelance: Laptop, tutor: GraduationCap, repair: Wrench, other: MoreHorizontal };
+const WORK_ICONS: Record<WorkType, typeof Car> = { taxi: Car, delivery: Bike, designer: PenTool, developer: Laptop, tutor: GraduationCap, beauty: Scissors, repair: Wrench, other: MoreHorizontal };
 const STEP_LABELS = ["Your details", "Verify identity", "Your work"];
 
 export default function Onboarding() {

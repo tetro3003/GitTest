@@ -7,14 +7,19 @@ export type ISODate = string; // YYYY-MM-DD
 export type ISODateTime = string;
 export type MonthKey = string; // YYYY-MM
 
-export type WorkType = "taxi" | "delivery" | "it_freelance" | "tutor" | "repair" | "other";
+export type WorkType = "taxi" | "delivery" | "designer" | "developer" | "tutor" | "beauty" | "repair" | "other";
 export type KycStatus = "not_started" | "pending" | "verified" | "failed";
 
 export type SourceType =
   | "bank"
   | "ride_hailing"
   | "delivery_platform"
-  | "freelance_platform"
+  | "design_tool"
+  | "dev_tool"
+  | "video_lessons"
+  | "lesson_audio"
+  | "booking_app"
+  | "salon_sensors"
   | "utility"
   | "mobile_operator"
   | "invoice_upload";
@@ -102,6 +107,50 @@ export interface ActivityRecord {
   activeContracts: number;
   rating: number | null;
   distinctClients: number;
+  /** Profession-specific raw signals, e.g. { versionsSaved: 14, clientComments: 3 }. */
+  signals: Record<string, number>;
+}
+
+/**
+ * Something the borrower chose to share inside a work tool: a Figma file, a
+ * GitHub repo, a Zoom lesson series, an uploaded lesson recording…
+ */
+export interface WorkItem {
+  id: string;
+  sourceId: string;
+  name: string;
+  /** Share of this source's activity that comes from the item (0–1). */
+  weight: number;
+  shared: boolean;
+  lastActivity: ISODate;
+  stats: Record<string, number>;
+}
+
+export type WorkCheckStatus = "strong" | "moderate" | "weak" | "mismatch" | "not_shared" | "not_supported";
+
+export interface WorkEvidenceLine {
+  label: string;
+  value: string;
+  /** What good looks like, e.g. "≥ 80% of weeks". */
+  target: string;
+  ok: boolean;
+}
+
+/** Result of the profession-specific Work Checker. */
+export interface WorkCheckResult {
+  status: WorkCheckStatus;
+  points: number;
+  profession: string;
+  /** Plain-language one-liner for the borrower. */
+  summary: string;
+  sourcesUsed: string[];
+  evidence: WorkEvidenceLine[];
+  /** Monthly income the observed work can plausibly explain. */
+  explainedIncome: { low: number; high: number } | null;
+  /** Verified monthly income being checked. */
+  income: number;
+  activeHoursPerWeek: number;
+  consistency: number;
 }
 
 /** A bill or loan instalment with its due date and when it was actually paid. */
@@ -131,6 +180,7 @@ export interface ScoringInput {
   activity: ActivityRecord[];
   obligations: ObligationPayment[];
   invoices: Invoice[];
+  workItems: WorkItem[];
   asOf: ISODate;
 }
 
@@ -232,14 +282,16 @@ export interface ScoreReport {
   /** Score before any fraud cap. */
   uncappedScore: number;
   bandCapped: boolean;
-  /** Score the borrower would have without sharing work activity. */
+  /** Score the borrower would have without sharing work evidence. */
   scoreWithoutActivity: number;
   verifiedMonthlyIncome: number;
   recommendedMaxPayment: number;
   reasons: ScoreReason[];
   fraudFlags: FraudFlag[];
   earlyWarnings: EarlyWarning[];
-  activityBoostApplied: number;
+  /** Points from the Work Checker (can be negative). */
+  workCheckPoints: number;
+  workCheck: WorkCheckResult;
   decision: Decision;
   dataSufficiency: DataSufficiency;
   features: Features;
@@ -274,6 +326,7 @@ export interface BorrowerProfile {
   borrower: Borrower;
   report: ScoreReport;
   activity: ActivityRecord[];
+  workItems: WorkItem[];
 }
 
 export interface ApplicantSummary {
@@ -299,6 +352,7 @@ export interface ApplicantDetail {
   activity: ActivityRecord[];
   invoices: Invoice[];
   obligations: ObligationPayment[];
+  workItems: WorkItem[];
 }
 
 export interface MonitoringAlert {

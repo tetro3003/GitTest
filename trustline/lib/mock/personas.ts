@@ -1,4 +1,4 @@
-import type { Borrower, ISODate, WorkType } from "../types";
+import type { Borrower, ISODate, SourceType, WorkType } from "../types";
 import type { MonthCtx, PersonaSpec, WeekCtx } from "./generator";
 import { makeSource } from "./sources";
 
@@ -19,7 +19,7 @@ const monthOfYear = (m: string) => Number(m.slice(5, 7)) - 1;
 /* ------------------------------------------------------------------ */
 const giorgi: PersonaDefinition = {
   featured: true,
-  story: "Two years on RideCo, steady earnings, bills always on time, ~45 hrs a week.",
+  story: "Two years on Bolt, steady earnings, bills always on time, ~45 hrs a week.",
   expected: "Band A/B",
   appliedAt: "2026-09-29",
   borrower: {
@@ -41,12 +41,13 @@ const giorgi: PersonaDefinition = {
     mobileSourceId: "giorgi-mobile",
     sources: [
       makeSource("giorgi-bank", "bank", "City Bank", { accountHolderName: "Giorgi Beridze" }),
-      makeSource("giorgi-rideco", "ride_hailing", "RideCo"),
+      makeSource("giorgi-bolt", "ride_hailing", "Bolt Driver"),
+      makeSource("giorgi-uber", "ride_hailing", "Uber Driver", { status: "available" }),
       makeSource("giorgi-utility", "utility", "CityPower & Water"),
       makeSource("giorgi-mobile", "mobile_operator", "MobiCell"),
     ],
     streams: [
-      { kind: "platform", provider: "RideCo", hourlyRate: 12.4, bankSourceId: "giorgi-bank" },
+      { kind: "platform", provider: "Bolt", hourlyRate: 12.4, bankSourceId: "giorgi-bank" },
       {
         kind: "clients",
         label: "Private transfers",
@@ -58,7 +59,7 @@ const giorgi: PersonaDefinition = {
       },
     ],
     activity: {
-      sourceId: "giorgi-rideco",
+      sources: [{ id: "giorgi-bolt", type: "ride_hailing", provider: "Bolt Driver", share: 1 }],
       weeks: 104,
       hours: ({ rng }) => rng.normal(45, 2.5),
       tripsPerHour: 1.7,
@@ -74,7 +75,7 @@ const giorgi: PersonaDefinition = {
 /* ------------------------------------------------------------------ */
 const nino: PersonaDefinition = {
   featured: true,
-  story: "Three direct clients plus FreelanceHub payouts. Income grew from ₾2,000 to ₾4,500, a few uneven months.",
+  story: "Developer with three direct clients plus FreelanceHub payouts. Income grew from ₾2,000 to ₾4,500; GitHub and Jira show the work behind it.",
   expected: "Band B",
   appliedAt: "2026-09-27",
   borrower: {
@@ -82,10 +83,10 @@ const nino: PersonaDefinition = {
     name: "Nino Japaridze",
     phone: "+995 577 98 76 54",
     city: "Tbilisi",
-    workType: "it_freelance",
+    workType: "developer",
     kycStatus: "verified",
     applicationStatus: "in_review",
-    tagline: "Growing IT freelancer",
+    tagline: "Growing developer",
   },
   spec: {
     seed: 202,
@@ -97,7 +98,8 @@ const nino: PersonaDefinition = {
     invoiceSourceId: "nino-invoices",
     sources: [
       makeSource("nino-bank", "bank", "Lari Bank", { accountHolderName: "Nino Japaridze" }),
-      makeSource("nino-hub", "freelance_platform", "FreelanceHub"),
+      makeSource("nino-github", "dev_tool", "GitHub"),
+      makeSource("nino-jira", "dev_tool", "Jira"),
       makeSource("nino-utility", "utility", "CityPower & Water"),
       makeSource("nino-mobile", "mobile_operator", "MobiCell"),
       makeSource("nino-invoices", "invoice_upload", "Invoice upload"),
@@ -123,7 +125,10 @@ const nino: PersonaDefinition = {
       },
     ],
     activity: {
-      sourceId: "nino-hub",
+      sources: [
+        { id: "nino-github", type: "dev_tool", provider: "GitHub", share: 0.85, items: [{ name: "atlas-retail/web-shop", weight: 5 }, { name: "pixel-forge/payments-api", weight: 3 }, { name: "northwind/cms", weight: 2 }, { name: "nino/dotfiles", weight: 0.3, shared: false }] },
+        { id: "nino-jira", type: "dev_tool", provider: "Jira", share: 0.15, items: [{ name: "ATLAS — Atlas Retail", weight: 3 }, { name: "PF — Pixel Forge", weight: 2 }] },
+      ],
       weeks: 104,
       hours: ({ w, rng }) => rng.normal(27 + w * 0.06, 3),
       tripsPerHour: 0.05,
@@ -149,7 +154,7 @@ const STUDENTS = [
 const tutorSeason = (m: number) => (m === 5 ? 0.25 : m === 6 ? 0.03 : m === 7 ? 0.06 : 1);
 const levan: PersonaDefinition = {
   featured: true,
-  story: "Maths tutor with 14 families. Strong September–May, almost nothing in July–August.",
+  story: "Maths tutor with 14 families, online on Zoom and at home. Strong September–May, almost nothing in July–August.",
   expected: "Band C, seasonality explained",
   appliedAt: "2026-09-30",
   borrower: {
@@ -171,7 +176,9 @@ const levan: PersonaDefinition = {
     mobileSourceId: "levan-mobile",
     sources: [
       makeSource("levan-bank", "bank", "City Bank", { accountHolderName: "Levan Tsiklauri" }),
-      makeSource("levan-tutorbook", "freelance_platform", "TutorBook"),
+      makeSource("levan-zoom", "video_lessons", "Zoom"),
+      makeSource("levan-meet", "video_lessons", "Google Meet", { status: "available" }),
+      makeSource("levan-audio", "lesson_audio", "Offline lesson audio"),
       makeSource("levan-utility", "utility", "CityPower & Water"),
       makeSource("levan-mobile", "mobile_operator", "MobiCell"),
     ],
@@ -187,7 +194,10 @@ const levan: PersonaDefinition = {
       },
     ],
     activity: {
-      sourceId: "levan-tutorbook",
+      sources: [
+        { id: "levan-zoom", type: "video_lessons", provider: "Zoom", share: 0.55, items: [{ name: "Maths — exam prep (grade 12)", weight: 3 }, { name: "Maths — grade 9 group", weight: 2 }] },
+        { id: "levan-audio", type: "lesson_audio", provider: "Offline lesson audio", share: 0.45, items: [{ name: "Home lesson — 14 Sep", weight: 1 }, { name: "Home lesson — 21 Sep", weight: 1 }, { name: "Home lesson — 28 Sep", weight: 1 }] },
+      ],
       weeks: 104,
       hours: ({ month, rng }: WeekCtx) => rng.normal(22, 2) * tutorSeason(monthOfYear(month)),
       tripsPerHour: 1,
@@ -205,7 +215,7 @@ const levan: PersonaDefinition = {
 const sandro: PersonaDefinition = {
   featured: true,
   story: "Started delivering 4 months ago. Short income history, but 42 hrs online every single week.",
-  expected: "D without activity → C with activity boost",
+  expected: "D without work data → C with Work Checker",
   appliedAt: "2026-09-30",
   borrower: {
     id: "sandro",
@@ -227,13 +237,14 @@ const sandro: PersonaDefinition = {
     mobileSourceId: "sandro-mobile",
     sources: [
       makeSource("sandro-bank", "bank", "Black Sea Bank", { accountHolderName: "Sandro Kapanadze" }),
-      makeSource("sandro-delivergo", "delivery_platform", "DeliverGo"),
+      makeSource("sandro-wolt", "delivery_platform", "Wolt Partner"),
+      makeSource("sandro-glovo", "delivery_platform", "Glovo Courier", { status: "available" }),
       makeSource("sandro-utility", "utility", "CityPower & Water"),
       makeSource("sandro-mobile", "mobile_operator", "MobiCell"),
     ],
-    streams: [{ kind: "platform", provider: "DeliverGo", hourlyRate: 10, bankSourceId: "sandro-bank" }],
+    streams: [{ kind: "platform", provider: "Wolt", hourlyRate: 10, bankSourceId: "sandro-bank" }],
     activity: {
-      sourceId: "sandro-delivergo",
+      sources: [{ id: "sandro-wolt", type: "delivery_platform", provider: "Wolt Partner", share: 1 }],
       weeks: 18,
       hours: ({ w, rng }) => rng.normal(41 + Math.min(w, 6) * 0.3, 1.5),
       tripsPerHour: 2.3,
@@ -271,12 +282,12 @@ const dato: PersonaDefinition = {
     sources: [
       makeSource("dato-bank", "bank", "City Bank", { accountHolderName: "Dato Mchedlishvili" }),
       makeSource("dato-bank2", "bank", "Express Bank", { accountHolderName: "Irakli Gelashvili" }),
-      makeSource("dato-quickdrop", "delivery_platform", "QuickDrop"),
+      makeSource("dato-glovo", "delivery_platform", "Glovo Courier"),
       makeSource("dato-utility", "utility", "CityPower & Water"),
       makeSource("dato-invoices", "invoice_upload", "Invoice upload"),
     ],
     streams: [
-      { kind: "platform", provider: "QuickDrop", hourlyRate: 9, bankSourceId: "dato-bank" },
+      { kind: "platform", provider: "Glovo", hourlyRate: 9, bankSourceId: "dato-bank" },
       {
         kind: "clients",
         label: "Odd jobs",
@@ -288,7 +299,7 @@ const dato: PersonaDefinition = {
       },
     ],
     activity: {
-      sourceId: "dato-quickdrop",
+      sources: [{ id: "dato-glovo", type: "delivery_platform", provider: "Glovo Courier", share: 1 }],
       weeks: 52,
       hours: ({ rng }) => Math.max(0, rng.normal(8, 2.5)),
       tripsPerHour: 2,
@@ -311,6 +322,16 @@ const dato: PersonaDefinition = {
 /* Background applicants (fill out the lender dashboard)               */
 /* ------------------------------------------------------------------ */
 
+/** Default work tool and payout counterparty per profession for background applicants. */
+const FILLER_TOOLS: Partial<Record<WorkType, { type: SourceType; provider: string; payer: string }>> = {
+  taxi: { type: "ride_hailing", provider: "Bolt Driver", payer: "Bolt" },
+  delivery: { type: "delivery_platform", provider: "Wolt Partner", payer: "Wolt" },
+  tutor: { type: "video_lessons", provider: "Zoom", payer: "Preply" },
+  designer: { type: "design_tool", provider: "Figma", payer: "Upwork" },
+  developer: { type: "dev_tool", provider: "GitHub", payer: "Upwork" },
+  beauty: { type: "booking_app", provider: "Booksy", payer: "Booksy Pay" },
+};
+
 interface FillerOpts {
   id: string;
   name: string;
@@ -330,8 +351,7 @@ interface FillerOpts {
 }
 
 function filler(o: FillerOpts): PersonaDefinition {
-  const platformType = o.workType === "taxi" ? "ride_hailing" : o.workType === "delivery" ? "delivery_platform" : "freelance_platform";
-  const provider = o.workType === "taxi" ? "RideCo" : o.workType === "delivery" ? "DeliverGo" : "FreelanceHub";
+  const tool = FILLER_TOOLS[o.workType] ?? { type: "delivery_platform" as const, provider: "Wolt Partner", payer: "Wolt" };
   const bank = `${o.id}-bank`;
   const act = `${o.id}-platform`;
   const months = o.months ?? 18;
@@ -350,11 +370,11 @@ function filler(o: FillerOpts): PersonaDefinition {
       utilitySourceId: `${o.id}-utility`,
       sources: [
         makeSource(bank, "bank", "City Bank", { accountHolderName: o.name }),
-        ...(hours > 0 ? [makeSource(act, platformType, provider)] : []),
+        ...(hours > 0 ? [makeSource(act, tool.type, tool.provider)] : []),
         makeSource(`${o.id}-utility`, "utility", "CityPower & Water"),
       ],
       streams: [
-        ...(hours > 0 ? [{ kind: "platform" as const, provider, hourlyRate: o.hourlyRate ?? 11, bankSourceId: bank }] : []),
+        ...(hours > 0 ? [{ kind: "platform" as const, provider: tool.payer, hourlyRate: o.hourlyRate ?? 11, bankSourceId: bank }] : []),
         ...(o.clientIncome
           ? [
               {
@@ -372,10 +392,10 @@ function filler(o: FillerOpts): PersonaDefinition {
       activity:
         hours > 0
           ? {
-              sourceId: act,
+              sources: [{ id: act, type: tool.type, provider: tool.provider, share: 1 }],
               weeks: months * 4,
               hours: ({ weeksAgo, rng }) => rng.normal(hours, 3) * (o.dropLast4w && weeksAgo < 4 ? 1 - o.dropLast4w : 1),
-              tripsPerHour: o.workType === "taxi" ? 1.7 : o.workType === "delivery" ? 2.2 : 0.05,
+              tripsPerHour: o.workType === "taxi" ? 1.7 : o.workType === "delivery" ? 2.2 : o.workType === "tutor" ? 1 : 0.05,
               rating: 4.7,
             }
           : undefined,
@@ -387,14 +407,111 @@ function filler(o: FillerOpts): PersonaDefinition {
 const fillers: PersonaDefinition[] = [
   filler({ id: "tamar", name: "Tamar Kvaratskhelia", city: "Tbilisi", workType: "delivery", seed: 611, appliedAt: "2026-06-12", status: "active_loan", hours: 44, hourlyRate: 9, dropLast4w: 0.35 }),
   filler({ id: "beka", name: "Beka Lomidze", city: "Tbilisi", workType: "taxi", seed: 612, appliedAt: "2026-09-25", status: "approved", hours: 50, hourlyRate: 12 }),
-  filler({ id: "mariam", name: "Mariam Gogua", city: "Tbilisi", workType: "it_freelance", seed: 613, appliedAt: "2026-09-21", status: "in_review", hours: 32, hourlyRate: 40, clientIncome: 1800 }),
   filler({ id: "irakli", name: "Irakli Abashidze", city: "Kutaisi", workType: "repair", seed: 614, appliedAt: "2026-09-18", status: "new", clientIncome: 1900, billOnTime: 0.8 }),
   filler({ id: "ana", name: "Ana Chkheidze", city: "Batumi", workType: "tutor", seed: 615, appliedAt: "2026-04-03", status: "active_loan", hours: 18, hourlyRate: 25, clientIncome: 600 }),
   filler({ id: "luka", name: "Luka Shengelia", city: "Rustavi", workType: "delivery", seed: 616, appliedAt: "2026-09-10", status: "declined", hours: 30, hourlyRate: 8, gambling: 0.3, billOnTime: 0.6 }),
-  filler({ id: "keti", name: "Keti Dolidze", city: "Tbilisi", workType: "other", seed: 617, appliedAt: "2026-05-20", status: "active_loan", clientIncome: 2100 }),
+  filler({ id: "giga", name: "Giga Tsereteli", city: "Tbilisi", workType: "developer", seed: 618, appliedAt: "2026-09-12", status: "in_review", hours: 26, hourlyRate: 45, clientIncome: 900 }),
 ];
 
-export const PERSONAS: PersonaDefinition[] = [giorgi, nino, levan, sandro, dato, ...fillers];
+/* ------------------------------------------------------------------ */
+/* 6. Mariam — UI/UX designer                                          */
+/* ------------------------------------------------------------------ */
+const mariam: PersonaDefinition = {
+  featured: true,
+  story: "Freelance UI/UX designer for three agencies. Figma version history, Photoshop and Illustrator sessions show the work behind every invoice.",
+  expected: "Band A/B, strong design evidence",
+  appliedAt: "2026-09-21",
+  borrower: { id: "mariam", name: "Mariam Gogua", phone: "+995 568 21 43 65", city: "Tbilisi", workType: "designer", kycStatus: "verified", applicationStatus: "in_review", tagline: "UI/UX designer" },
+  spec: {
+    seed: 613,
+    historyMonths: 18,
+    startBalance: 1200,
+    primaryBankId: "mariam-bank",
+    utilitySourceId: "mariam-utility",
+    mobileSourceId: "mariam-mobile",
+    sources: [
+      makeSource("mariam-bank", "bank", "Lari Bank", { accountHolderName: "Mariam Gogua" }),
+      makeSource("mariam-figma", "design_tool", "Figma"),
+      makeSource("mariam-ps", "design_tool", "Adobe Photoshop"),
+      makeSource("mariam-ai", "design_tool", "Adobe Illustrator"),
+      makeSource("mariam-utility", "utility", "CityPower & Water"),
+      makeSource("mariam-mobile", "mobile_operator", "MobiCell"),
+    ],
+    streams: [
+      {
+        kind: "clients",
+        label: "Agencies",
+        category: "client_payment",
+        counterparties: ["Bloom Agency", "Kavea Studio", "Nordic Apps"],
+        monthly: ({ i, rng }) => (2900 + i * 25) * rng.range(0.85, 1.15),
+        paymentsPerMonth: [2, 4],
+        bankSourceId: "mariam-bank",
+      },
+    ],
+    activity: {
+      sources: [
+        { id: "mariam-figma", type: "design_tool", provider: "Figma", share: 0.65, items: [{ name: "Bloom — banking app redesign", weight: 4 }, { name: "Kavea — e-shop checkout", weight: 3 }, { name: "Nordic Apps — design system", weight: 2 }, { name: "Personal portfolio", weight: 0.5, shared: false }] },
+        { id: "mariam-ps", type: "design_tool", provider: "Adobe Photoshop", share: 0.2, items: [{ name: "Kavea product photos.psd", weight: 2 }, { name: "Bloom app store screens.psd", weight: 1 }] },
+        { id: "mariam-ai", type: "design_tool", provider: "Adobe Illustrator", share: 0.15, items: [{ name: "Nordic Apps icon set.ai", weight: 2 }, { name: "Kavea logo refresh.ai", weight: 1 }] },
+      ],
+      weeks: 72,
+      hours: ({ rng }) => rng.normal(34, 3),
+      tripsPerHour: 0.05,
+      distinctClients: () => 3,
+      rating: 4.9,
+    },
+    expenses: { rent: 800, utilities: 75, groceries: 420, fuel: 0, mobile: 25, savingsRate: 0.2, gamblingShare: 0, billOnTimeRate: 0.95, monthlySavingsTransfer: 250 },
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* 7. Keti — beauty specialist                                         */
+/* ------------------------------------------------------------------ */
+const keti: PersonaDefinition = {
+  featured: true,
+  story: "Hairdresser and nail artist renting a chair at Salon Lumi. Booksy bookings and the salon's door and station sensors confirm ~130 services a month.",
+  expected: "Band A/B, bookings match sensors",
+  appliedAt: "2026-09-26",
+  borrower: { id: "keti", name: "Keti Dolidze", phone: "+995 574 66 77 88", city: "Tbilisi", workType: "beauty", kycStatus: "verified", applicationStatus: "new", tagline: "Beauty specialist" },
+  spec: {
+    seed: 617,
+    historyMonths: 18,
+    startBalance: 900,
+    primaryBankId: "keti-bank",
+    utilitySourceId: "keti-utility",
+    sources: [
+      makeSource("keti-bank", "bank", "City Bank", { accountHolderName: "Keti Dolidze" }),
+      makeSource("keti-booksy", "booking_app", "Booksy"),
+      makeSource("keti-fresha", "booking_app", "Fresha", { status: "available" }),
+      makeSource("keti-sensors", "salon_sensors", "Salon sensors"),
+      makeSource("keti-utility", "utility", "CityPower & Water"),
+    ],
+    streams: [
+      {
+        kind: "clients",
+        label: "Card payments",
+        category: "client_payment",
+        counterparties: ["Salon Lumi — card terminal payout", "Booksy Pay"],
+        monthly: ({ rng }) => rng.normal(2250, 220),
+        paymentsPerMonth: [6, 10],
+        bankSourceId: "keti-bank",
+      },
+    ],
+    activity: {
+      sources: [
+        { id: "keti-booksy", type: "booking_app", provider: "Booksy", share: 1 },
+        { id: "keti-sensors", type: "salon_sensors", provider: "Salon sensors", share: 0 },
+      ],
+      weeks: 72,
+      hours: ({ rng }) => rng.normal(38, 2.5),
+      tripsPerHour: 0.75,
+      rating: 4.86,
+    },
+    expenses: { rent: 450, utilities: 70, groceries: 380, fuel: 0, mobile: 20, savingsRate: 0.18, gamblingShare: 0, billOnTimeRate: 0.95 },
+  },
+};
+
+export const PERSONAS: PersonaDefinition[] = [giorgi, nino, levan, sandro, dato, mariam, keti, ...fillers];
 export const FEATURED_PERSONA_IDS = PERSONAS.filter((p) => p.featured).map((p) => p.borrower.id);
 
 export function getPersona(id: string): PersonaDefinition | undefined {

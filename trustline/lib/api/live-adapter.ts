@@ -39,6 +39,8 @@ export function createLiveAdapter(): ApiClient {
     connectSource: (id, sourceId) => post(`/borrowers/${id}/sources/${sourceId}/connect`),
     disconnectSource: (id, sourceId) => post(`/borrowers/${id}/sources/${sourceId}/disconnect`),
     getProfile: (id) => request(`/borrowers/${id}/profile`),
+    setWorkItemShared: (id, itemId, shared) => request(`/borrowers/${id}/work-items/${itemId}`, { method: "PATCH", body: JSON.stringify({ shared }) }),
+    uploadLessonRecording: (id, sourceId, recording) => post(`/borrowers/${id}/sources/${sourceId}/recordings`, recording),
     listLenders: () => request(`/lenders`),
     shareWithLender: (id, lenderId, opts) => post(`/borrowers/${id}/shares`, { lenderId, ...opts }),
     listShares: (id) => request(`/borrowers/${id}/shares`),

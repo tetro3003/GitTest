@@ -30,8 +30,10 @@ export function signed(n: number): string {
 export const WORK_TYPE_LABEL: Record<WorkType, string> = {
   taxi: "Taxi driver",
   delivery: "Courier",
-  it_freelance: "IT freelancer",
+  designer: "UI/UX designer",
+  developer: "Software developer",
   tutor: "Tutor",
+  beauty: "Beauty specialist",
   repair: "Repair worker",
   other: "Other self-employed",
 };

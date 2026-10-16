@@ -1,4 +1,5 @@
 import { daysBetween, daysInMonth, lastMonths, monthKey } from "../dates";
+import { weeklyTotals } from "./activity";
 import type { ActivityRecord, MonthKey, ScoringInput, Transaction, TransactionCategory } from "../types";
 
 /** Inflow categories that count as earned income. Self-transfers never do. */
@@ -89,10 +90,10 @@ export function incomeLabel(t: Transaction): string {
  */
 export function hoursByMonth(activity: readonly ActivityRecord[]): Map<MonthKey, number> {
   const acc = new Map<MonthKey, { total: number; weeks: number }>();
-  for (const a of activity) {
-    const k = monthKey(a.weekStart);
+  for (const w of weeklyTotals(activity)) {
+    const k = monthKey(w.weekStart);
     const cur = acc.get(k) ?? { total: 0, weeks: 0 };
-    acc.set(k, { total: cur.total + a.hoursOnline, weeks: cur.weeks + 1 });
+    acc.set(k, { total: cur.total + w.hours, weeks: cur.weeks + 1 });
   }
   const m = new Map<MonthKey, number>();
   for (const [k, v] of acc) m.set(k, (v.total / v.weeks) * (daysInMonth(k) / 7));

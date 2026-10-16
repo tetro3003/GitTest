@@ -6,8 +6,12 @@ import { useRouterState } from "../router";
 type Props = Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & { href: string; prefetch?: boolean; replace?: boolean };
 
 /** next/link replacement: navigates the in-memory router instead of the URL. */
-const Link = forwardRef<HTMLAnchorElement, Props>(function Link({ href, onClick, prefetch: _prefetch, replace, target: _target, ...rest }, ref) {
+const Link = forwardRef<HTMLAnchorElement, Props>(function Link({ href, onClick, replace, ...props }, ref) {
   const { navigate } = useRouterState();
+  // Drop Next-only props and new-tab targets; everything opens in the same view.
+  const rest = { ...props };
+  delete rest.prefetch;
+  delete rest.target;
   return (
     <a
       ref={ref}
