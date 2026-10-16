@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens. One brand colour (deep teal) plus semantic colours.
+ * All components read these, so re-theming happens here only.
+ */
+:root {
+  --background: oklch(0.985 0.004 200);
+  --foreground: oklch(0.21 0.02 230);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --muted: oklch(0.955 0.008 210);
+  --muted-foreground: oklch(0.5 0.02 230);
+  --border: oklch(0.91 0.01 220);
+  --input: oklch(0.88 0.012 220);
+  --ring: oklch(0.52 0.1 190);
+
+  --brand: oklch(0.47 0.095 192);
+  --brand-strong: oklch(0.38 0.08 195);
+  --brand-foreground: oklch(0.99 0.01 190);
+  --brand-soft: oklch(0.95 0.03 190);
+
+  --positive: oklch(0.56 0.14 152);
+  --positive-soft: oklch(0.95 0.04 152);
+  --warning: oklch(0.7 0.15 70);
+  --warning-strong: oklch(0.55 0.13 60);
+  --warning-soft: oklch(0.96 0.05 85);
+  --risk: oklch(0.56 0.19 25);
+  --risk-soft: oklch(0.95 0.035 25);
+
+  /* Categorical chart palette — validated (lightness, chroma, CVD, contrast). Fixed order. */
+  --chart-1: #00897d;
+  --chart-2: #dc932e;
+  --chart-3: #3e6dc8;
+  --chart-4: #479c4d;
+  --chart-5: #ae4090;
+  --chart-6: oklch(0.6 0.02 230);
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: oklch(0.17 0.015 230);
+  --foreground: oklch(0.95 0.006 220);
+  --card: oklch(0.21 0.017 230);
+  --card-foreground: var(--foreground);
+  --muted: oklch(0.25 0.017 230);
+  --muted-foreground: oklch(0.72 0.02 225);
+  --border: oklch(0.3 0.018 230);
+  --input: oklch(0.34 0.02 230);
+  --ring: oklch(0.7 0.1 190);
+
+  --brand: oklch(0.72 0.11 190);
+  --brand-strong: oklch(0.8 0.1 188);
+  --brand-foreground: oklch(0.18 0.03 200);
+  --brand-soft: oklch(0.28 0.04 195);
+
+  --positive: oklch(0.74 0.15 152);
+  --positive-soft: oklch(0.28 0.05 152);
+  --warning: oklch(0.8 0.14 78);
+  --warning-strong: oklch(0.82 0.13 78);
+  --warning-soft: oklch(0.3 0.05 75);
+  --risk: oklch(0.7 0.17 25);
+  --risk-soft: oklch(0.3 0.06 25);
+
+  --chart-1: #00a8a2;
+  --chart-2: #c87f2c;
+  --chart-3: #5987dd;
+  --chart-4: #4ea954;
+  --chart-5: #c959a9;
+  --chart-6: oklch(0.6 0.02 230);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-warning: var(--warning);
+  --color-warning-strong: var(--warning-strong);
+  --color-warning-soft: var(--warning-soft);
+  --color-risk: var(--risk);
+  --color-risk-soft: var(--risk-soft);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Numbers line up in tables and KPIs. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+  .print-break {
+    break-inside: avoid;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

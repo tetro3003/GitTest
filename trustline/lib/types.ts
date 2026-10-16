@@ -1,0 +1,330 @@
+/**
+ * Domain types shared by the UI, the API client and the scoring engine.
+ * Keep this file framework-free: the backend will reuse these shapes.
+ */
+
+export type ISODate = string; // YYYY-MM-DD
+export type ISODateTime = string;
+export type MonthKey = string; // YYYY-MM
+
+export type WorkType = "taxi" | "delivery" | "it_freelance" | "tutor" | "repair" | "other";
+export type KycStatus = "not_started" | "pending" | "verified" | "failed";
+
+export type SourceType =
+  | "bank"
+  | "ride_hailing"
+  | "delivery_platform"
+  | "freelance_platform"
+  | "utility"
+  | "mobile_operator"
+  | "invoice_upload";
+
+/** 1 = verified money, 2 = payment behaviour, 3 = work evidence */
+export type SourceTier = 1 | 2 | 3;
+export type SourceStatus = "available" | "connected" | "revoked" | "error";
+
+export interface DataSource {
+  id: string;
+  type: SourceType;
+  provider: string;
+  status: SourceStatus;
+  connectedAt: ISODateTime | null;
+  tier: SourceTier;
+  /** Name on the account as reported by the provider (used for KYC match). */
+  accountHolderName?: string;
+  /** Human-readable list of what is shared when connected. */
+  dataShared: string[];
+  /** How many days the consent is valid for. */
+  consentDays: number;
+  /** Work-activity sources are opt-in boosts that can never lower the score. */
+  optional: boolean;
+}
+
+export type ConsentStatus = "active" | "revoked" | "expired";
+
+export interface Consent {
+  id: string;
+  kind: "source" | "lender_share";
+  /** Source id for `source` consents, lender id for `lender_share`. */
+  targetId: string;
+  scope: string[];
+  grantedAt: ISODateTime;
+  expiresAt: ISODateTime;
+  status: ConsentStatus;
+}
+
+export type ApplicationStatus = "new" | "in_review" | "approved" | "declined" | "active_loan";
+
+export interface Borrower {
+  id: string;
+  name: string;
+  phone: string;
+  city: string;
+  workType: WorkType;
+  kycStatus: KycStatus;
+  connectedSources: DataSource[];
+  consents: Consent[];
+  applicationStatus: ApplicationStatus;
+  /** Short demo blurb, not part of the real model. */
+  tagline?: string;
+}
+
+export type TransactionCategory =
+  | "platform_payout"
+  | "client_payment"
+  | "transfer_self"
+  | "transfer_p2p"
+  | "rent"
+  | "utilities"
+  | "groceries"
+  | "fuel"
+  | "loan_repayment"
+  | "gambling"
+  | "other";
+
+export interface Transaction {
+  id: string;
+  date: ISODate;
+  amount: number; // always positive
+  direction: "in" | "out";
+  counterparty: string;
+  category: TransactionCategory;
+  sourceId: string;
+  /** End-of-transaction account balance. */
+  balanceAfter: number;
+}
+
+export interface ActivityRecord {
+  weekStart: ISODate;
+  sourceId: string;
+  hoursOnline: number;
+  tripsOrOrders: number;
+  activeContracts: number;
+  rating: number | null;
+  distinctClients: number;
+}
+
+/** A bill or loan instalment with its due date and when it was actually paid. */
+export interface ObligationPayment {
+  id: string;
+  sourceId: string;
+  kind: "utility" | "mobile" | "loan";
+  provider: string;
+  amount: number;
+  dueDate: ISODate;
+  paidDate: ISODate | null;
+}
+
+export interface Invoice {
+  id: string;
+  sourceId: string;
+  date: ISODate;
+  client: string;
+  amount: number;
+}
+
+/** Everything the engine needs. Only data from connected sources goes in. */
+export interface ScoringInput {
+  borrower: Pick<Borrower, "id" | "name" | "workType">;
+  sources: DataSource[];
+  transactions: Transaction[];
+  activity: ActivityRecord[];
+  obligations: ObligationPayment[];
+  invoices: Invoice[];
+  asOf: ISODate;
+}
+
+export type Trend = "growing" | "flat" | "declining";
+
+export interface Features {
+  avgIncome3m: number;
+  avgIncome6m: number;
+  avgIncome12m: number;
+  medianIncome6m: number;
+  /** Coefficient of variation of monthly income (lower = more stable). */
+  incomeCV: number;
+  /** Relative monthly slope, e.g. 0.05 = +5% of mean per month. */
+  trendSlope: number;
+  trend: Trend;
+  zeroIncomeMonths: number;
+  incomeSourceCount: number;
+  topSourceShare: number;
+  seasonal: boolean;
+  essentialSpend: number;
+  existingDebtPayments: number;
+  freeCashFlow: number;
+  freeCashFlowRatio: number;
+  minBalanceAvg: number;
+  nearZeroBalanceCount: number;
+  onTimeBillRate: number | null;
+  loanRepaymentOnTime: number | null;
+  gamblingShare: number;
+  hasActivityData: boolean;
+  activeWeeksLast52: number;
+  activityConsistency: number;
+  activityTrend: Trend;
+  /** Change in hours: last 4 weeks vs the 4 weeks before. */
+  activityChange4w: number;
+  avgRating: number | null;
+  tenureMonths: number;
+  verifiedMonthlyIncome: number;
+  /** Income before excluding self-transfers / suspected circular money. */
+  grossMonthlyIncome: number;
+}
+
+export type ReasonDirection = "positive" | "negative" | "neutral";
+
+export interface ScoreReason {
+  id: string;
+  /** Precise label for lenders. */
+  label: string;
+  /** Plain-language explanation for borrowers. */
+  plain: string;
+  /** Point impact on the score. */
+  impact: number;
+  direction: ReasonDirection;
+  /** Underlying value, formatted, for transparency. */
+  detail: string;
+}
+
+export type FraudFlagType =
+  | "circular_money"
+  | "pre_application_spike"
+  | "income_activity_mismatch"
+  | "unmatched_invoices"
+  | "name_mismatch";
+
+export type Severity = "low" | "medium" | "high";
+
+export interface FraudFlag {
+  type: FraudFlagType;
+  severity: Severity;
+  title: string;
+  explanation: string;
+  transactionIds: string[];
+  invoiceIds?: string[];
+}
+
+export interface EarlyWarning {
+  type: "activity_decline" | "low_balance" | "missed_bill";
+  severity: Severity;
+  message: string;
+}
+
+export type Band = "A" | "B" | "C" | "D" | "E";
+export type Decision = "approve" | "review" | "decline";
+export type DataSufficiency = "ok" | "limited" | "insufficient";
+
+export interface MonthlyIncomePoint {
+  month: MonthKey;
+  /** Inflows counted as income per income-source label. */
+  bySource: Record<string, number>;
+  gross: number;
+  verified: number;
+  hours: number | null;
+}
+
+export interface ScoreReport {
+  borrowerId: string;
+  score: number;
+  band: Band;
+  baseScore: number;
+  /** Score before any fraud cap. */
+  uncappedScore: number;
+  bandCapped: boolean;
+  /** Score the borrower would have without sharing work activity. */
+  scoreWithoutActivity: number;
+  verifiedMonthlyIncome: number;
+  recommendedMaxPayment: number;
+  reasons: ScoreReason[];
+  fraudFlags: FraudFlag[];
+  earlyWarnings: EarlyWarning[];
+  activityBoostApplied: number;
+  decision: Decision;
+  dataSufficiency: DataSufficiency;
+  features: Features;
+  monthlyIncome: MonthlyIncomePoint[];
+  incomeSources: string[];
+  improvementTips: string[];
+  generatedAt: ISODateTime;
+}
+
+/* ---------- API-level shapes ---------- */
+
+export interface Lender {
+  id: string;
+  name: string;
+  type: "bank" | "mfi" | "leasing";
+  description: string;
+}
+
+export interface Share {
+  id: string;
+  borrowerId: string;
+  lenderId: string;
+  lenderName: string;
+  code: string;
+  scope: string[];
+  createdAt: ISODateTime;
+  expiresAt: ISODateTime;
+  status: ConsentStatus;
+}
+
+export interface BorrowerProfile {
+  borrower: Borrower;
+  report: ScoreReport;
+  activity: ActivityRecord[];
+}
+
+export interface ApplicantSummary {
+  id: string;
+  name: string;
+  workType: WorkType;
+  city: string;
+  score: number;
+  band: Band;
+  verifiedMonthlyIncome: number;
+  recommendedMaxPayment: number;
+  fraudFlagCount: number;
+  highestSeverity: Severity | null;
+  status: ApplicationStatus;
+  decision: Decision;
+  appliedAt: ISODate;
+}
+
+export interface ApplicantDetail {
+  borrower: Borrower;
+  report: ScoreReport;
+  transactions: Transaction[];
+  activity: ActivityRecord[];
+  invoices: Invoice[];
+  obligations: ObligationPayment[];
+}
+
+export interface MonitoringAlert {
+  id: string;
+  borrowerId: string;
+  borrowerName: string;
+  workType: WorkType;
+  severity: Severity;
+  type: EarlyWarning["type"] | FraudFlagType;
+  message: string;
+  detectedAt: ISODate;
+  /** Weekly hours for the sparkline. */
+  trend: number[];
+}
+
+export interface ApplicantQuery {
+  search?: string;
+  bands?: Band[];
+  workTypes?: WorkType[];
+  sortBy?: "score" | "income" | "name" | "appliedAt";
+  sortDir?: "asc" | "desc";
+}
+
+export interface PersonaSummary {
+  borrower: Borrower;
+  report: ScoreReport;
+  story: string;
+  expected: string;
+}
