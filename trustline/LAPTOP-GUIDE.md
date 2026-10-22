@@ -119,22 +119,39 @@ curl -H "Authorization: Bearer tl_demo_citybank_key" http://localhost:3000/api/v
 
 ## 5. Designer beta (real data, real accounts)
 
-Open **http://localhost:3000/beta**. This part uses no demo data: everything is read live from Figma and the blockchain.
+Open **http://localhost:3000/beta** and create an account. Nothing here is demo data: everything is read live from the source, and every step appears in **Behind the scenes** on the right.
 
-1. **Create an account** (name, email, password).
-2. **Figma.** Click *Use a personal access token*:
-   Figma → your avatar → **Settings → Security → Personal access tokens → Generate**.
-   Give it *read* access to File content, File versions and Comments. Paste it, then paste the links of 1–3 Figma files with real client work and click **Save and read files**.
-   Watch **Behind the scenes** on the right: every call to Figma appears as it happens.
-3. **Wallets.** Click **Add wallet**, pick the network, then **Connect & sign** with MetaMask, Phantom or TronLink.
-   Signing is free and moves no money. You can add as many wallets as you like.
-   No browser extension? Use **Sign manually** with any wallet app that can "sign a message".
-4. Your score appears once there is both proof of work and proof of income.
-5. The **daily robot** re-reads every connection once a day while the app is running. **Refresh** does it now.
+### What works without any setup
+| Source | How |
+|---|---|
+| **Figma** | *Use a personal access token*: Figma → your avatar → **Settings → Security → Personal access tokens → Generate** (read: File content, File versions, Comments). Paste it, then paste 1–3 file links with client work. |
+| **Crypto wallets** | **Add wallet** → pick the network → **Connect & sign** with MetaMask, Phantom or TronLink (free, moves no money). Add as many as you like. No extension? **Sign manually**. |
+| **Wise** | Wise → **Settings → Developer tools → API tokens → Add new token → Read only**. Paste it into the Wise card. |
+| **Webflow** | *Use a site token*: Site settings → **Apps & integrations → API access → Generate API token** (read-only Sites + Pages). |
+| **TBC Bank (test mode)** | **Upload test transactions**: a CSV with `date, amount, currency, counterparty` columns, or the bank's open-banking JSON. Example: `trustline/public/samples/tbc-test-transactions.csv`. |
+| **ID check** | **Start** → photograph the back of your ID (the lines with `<<<`), then the front, then a live selfie (blink, turn your head). Needs a camera; photos never leave your laptop. First use downloads ~15 MB of models. |
 
-**"Sign in with Figma" button (optional).** Create a Figma app at https://www.figma.com/developers/apps
-with callback URL `http://localhost:3000/api/beta/figma/callback`. Copy `.env.example` to `.env.local`,
-fill in `FIGMA_CLIENT_ID` and `FIGMA_CLIENT_SECRET`, and restart `npm run dev`.
+### "Connect" buttons (one free developer app per company)
+Copy `.env.example` to `.env.local`, fill in the keys you create, and restart `npm run dev`.
+In every app, set the **redirect / callback URL** exactly as shown.
+
+| Company | Where | Redirect URL | Notes |
+|---|---|---|---|
+| **Google (Gmail)** | console.cloud.google.com → new project → **APIs & Services → Library → Gmail API → Enable** → **OAuth consent screen** (External, add your email as a *test user*) → **Credentials → Create OAuth client ID → Web application** | `http://localhost:3000/api/beta/oauth/google/callback` | Fill `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`. While the app is in "Testing", only the test users you add can connect. |
+| **Canva** | canva.com/developers → **Your integrations → Create** → scopes **design:meta:read**, **profile:read** | `http://127.0.0.1:3000/api/beta/oauth/canva/callback` | Canva doesn't accept `localhost`: open the app at **http://127.0.0.1:3000/beta** (log in again there) when connecting Canva. |
+| **Webflow** | Workspace settings → **Apps & Integrations → Develop → Create an App** → scopes Sites read, Pages read, Authorized user read | `http://localhost:3000/api/beta/oauth/webflow/callback` | Or just use a site token (above). |
+| **Miro** | miro.com/app/settings → **Your apps → Create new app** → permission **boards:read** | `http://localhost:3000/api/beta/oauth/miro/callback` | |
+| **Dribbble** | dribbble.com/account/applications/new | `http://localhost:3000/api/beta/oauth/dribbble/callback` | Scope `public`. |
+| **Figma** | figma.com/developers/apps → new app (private) | `http://localhost:3000/api/beta/figma/callback` | Optional: tokens work too. |
+
+**AI reading of emails (optional):** put an Anthropic API key in `ANTHROPIC_API_KEY`. Claude then reads each signature-verified payment email (amount, client, date). Without it, built-in rules for Upwork, Fiverr, PayPal and Payoneer are used.
+
+### How the beta decides what counts
+- **Emails** count only if the company's digital signature (DKIM) checks out, or Google stamped it as valid on arrival. Edited or forged emails are thrown away.
+- The **same payment seen twice** (e.g. Upwork email + bank deposit) counts once.
+- **Payouts** (Upwork → bank, PayPal → bank, exchange → wallet) are your own money moving; they count where the client paid.
+- Transfers **between your own wallets**, top-ups and tiny spam transfers never count.
+- The **daily robot** re-reads every connection once a day while the app is running. **Refresh** does it now.
 
 Access keys are encrypted before they are saved. The encryption key is in `trustline/data/vault.key`: never share it.
 
@@ -162,4 +179,4 @@ Access keys are encrypted before they are saved. The encryption key is in `trust
 npm test
 ```
 
-This runs 72 tests covering scoring, fraud checks, the API, file imports and connectors. All should pass.
+This runs 87 tests covering scoring, fraud checks, the API, file imports and connectors. All should pass.

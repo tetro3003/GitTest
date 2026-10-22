@@ -25,10 +25,10 @@ function steadyFacts(months = 12, amount = 2000) {
   const payments: PaymentFact[] = [];
   const work: WorkFact[] = [];
   for (let i = 0; i < months; i++) {
-    payments.push({ at: monthsBack(i + 1), amountUsd: amount, asset: "USDC", chain: "Base", payer: i % 3 === 0 ? "a" : i % 3 === 1 ? "b" : "c", payerLabel: null, status: "income", note: null, proof: "x" });
-    for (let d = 0; d < 6; d++) work.push({ at: monthsBack(i + 1, 2 + d * 4), kind: "version", item: "App", person: null });
+    payments.push({ at: monthsBack(i + 1), source: "wallet", amountUsd: amount, asset: "USDC", chain: "Base", payer: i % 3 === 0 ? "a" : i % 3 === 1 ? "b" : "c", payerLabel: null, status: "income", note: null, proof: "x" });
+    for (let d = 0; d < 6; d++) work.push({ at: monthsBack(i + 1, 2 + d * 4), source: "figma", kind: "version", item: "App", person: null });
   }
-  for (let w = 0; w < 12; w++) work.push({ at: new Date(new Date(ASOF).getTime() - w * 7 * 864e5).toISOString(), kind: "version", item: "App", person: null });
+  for (let w = 0; w < 12; w++) work.push({ at: new Date(new Date(ASOF).getTime() - w * 7 * 864e5).toISOString(), source: "figma", kind: "version", item: "App", person: null });
   return { payments, work };
 }
 
@@ -37,7 +37,7 @@ describe("beta score", () => {
     const r = computeBetaScore({ payments: [], work: [], asOf: ASOF });
     expect(r.ready).toBe(false);
     expect(r.score).toBeNull();
-    expect(r.missing.length).toBe(2);
+    expect(r.missing.length).toBe(3);
   });
 
   it("rewards steady, work-backed income", () => {
@@ -54,7 +54,7 @@ describe("beta score", () => {
     const noWork = computeBetaScore({ payments, work: [], asOf: ASOF });
     const withWork = computeBetaScore({ ...steadyFacts(), asOf: ASOF });
     expect(noWork.score!).toBeLessThan(withWork.score!);
-    const oldWork: WorkFact[] = [{ at: "2024-01-05T10:00:00Z", kind: "version", item: "Old", person: null }];
+    const oldWork: WorkFact[] = [{ at: "2024-01-05T10:00:00Z", source: "figma", kind: "version", item: "Old", person: null }];
     const fraud = computeBetaScore({ payments, work: oldWork, asOf: ASOF });
     expect(fraud.flags.map((f) => f.id)).toContain("income_without_work");
     expect(fraud.score!).toBeLessThanOrEqual(599);

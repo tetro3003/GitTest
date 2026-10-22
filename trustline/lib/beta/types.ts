@@ -1,6 +1,9 @@
 /** Shared types for the designer beta (server + browser). */
 
-export type ProviderId = "figma" | "wallet";
+export type ProviderId = "figma" | "wallet" | "gmail" | "wise" | "bank" | "canva" | "webflow" | "miro" | "dribbble";
+export type OAuthProvider = "google" | "canva" | "webflow" | "miro" | "dribbble";
+export type WorkSource = "figma" | "canva" | "webflow" | "miro" | "dribbble";
+export type PaymentSource = "wallet" | "email" | "wise" | "bank";
 export type ConnectionStatus = "needs_setup" | "syncing" | "ok" | "error";
 
 export type ChainFamily = "evm" | "solana" | "tron";
@@ -27,7 +30,7 @@ export interface BetaConnection {
 }
 
 /** Who performed a step, shown as a coloured chip in the timeline. */
-export type TimelineActor = "you" | "trustline" | "figma" | "blockchain" | "robot";
+export type TimelineActor = "you" | "trustline" | "figma" | "blockchain" | "robot" | "google" | "ai" | "wise" | "bank" | "canva" | "webflow" | "miro" | "dribbble";
 export type TimelineLevel = "step" | "ok" | "warn" | "error";
 
 export interface TimelineEntry {
@@ -45,24 +48,39 @@ export interface TimelineEntry {
 /** A single piece of design work, read from the work tool's server. */
 export interface WorkFact {
   at: string;
-  kind: "version" | "comment";
+  source: WorkSource;
+  /** version/edit = hands-on design work; comment = someone else reviewing; publish/shot = finished work shown. */
+  kind: "version" | "edit" | "comment" | "publish" | "shot";
   item: string;
   /** For comments: the person who wrote it (a likely client). */
   person: string | null;
 }
 
-export type PaymentStatus = "income" | "own_transfer" | "unclear" | "ignored";
+export type PaymentStatus = "income" | "own_transfer" | "unclear" | "ignored" | "duplicate" | "not_income";
 
 export interface PaymentFact {
   at: string;
+  source: PaymentSource;
   amountUsd: number;
+  /** Original currency or coin (USDC, EUR, GEL…). */
   asset: string;
+  /** Where it was seen: a blockchain, "Upwork", "PayPal", "Wise", "TBC Bank"… */
   chain: string;
   payer: string;
   payerLabel: string | null;
   status: PaymentStatus;
   note: string | null;
+  /** Link or reference that proves it (explorer link, email signature result, bank transaction id). */
   proof: string;
+}
+
+export interface IdentityCheck {
+  status: "verified" | "failed";
+  name: string;
+  documentNumberLast4: string;
+  expiry: string;
+  checks: { id: string; label: string; ok: boolean; detail: string }[];
+  verifiedAt: string;
 }
 
 export interface BetaReason {

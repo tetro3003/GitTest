@@ -3,18 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Code2, Loader2, LogOut, X } from "lucide-react";
 import { AuthForm } from "@/components/beta/auth-form";
-import { ComingNext } from "@/components/beta/coming-next";
 import { FigmaCard } from "@/components/beta/figma-card";
+import { IdCheckCard } from "@/components/beta/id-check";
+import { MONEY_SOURCES, SourceCard, WORK_SOURCES } from "@/components/beta/source-card";
 import { PaymentsTable } from "@/components/beta/payments-table";
 import { ScoreDetails, ScoreHero } from "@/components/beta/score-panel";
 import { Timeline } from "@/components/beta/timeline";
 import { WalletsCard } from "@/components/beta/wallets";
 import { Button } from "@/components/ui/button";
-import { BetaApiError, betaApi } from "@/lib/beta/client";
-import type { BetaConnection, BetaScore, BetaUser, PaymentFact, TimelineEntry } from "@/lib/beta/types";
+import { BetaApiError, betaApi, type SetupState } from "@/lib/beta/client";
+import type { BetaConnection, BetaScore, BetaUser, IdentityCheck, PaymentFact, TimelineEntry } from "@/lib/beta/types";
 
 export default function BetaHome() {
-  const [me, setMe] = useState<{ user: BetaUser; figmaOAuth: boolean } | null | undefined>(undefined);
+  const [me, setMe] = useState<{ user: BetaUser; figmaOAuth: boolean; setup: SetupState } | null | undefined>(undefined);
+  const [identity, setIdentity] = useState<IdentityCheck | null>(null);
   const [connections, setConnections] = useState<BetaConnection[]>([]);
   const [score, setScore] = useState<BetaScore | null>(null);
   const [payments, setPayments] = useState<PaymentFact[]>([]);
@@ -35,7 +37,8 @@ export default function BetaHome() {
 
   const refresh = useCallback(async () => {
     try {
-      const [c, s, p, t] = await Promise.all([betaApi.connections(), betaApi.score(), betaApi.payments(), betaApi.timeline(lastId.current)]);
+      const [c, s, p, t, id] = await Promise.all([betaApi.connections(), betaApi.score(), betaApi.payments(), betaApi.timeline(lastId.current), betaApi.identity()]);
+      setIdentity(id.identity);
       setConnections(c);
       setScore(s.score);
       setPayments(p);
@@ -57,6 +60,7 @@ export default function BetaHome() {
     void loadMe();
     const q = new URLSearchParams(window.location.search);
     if (q.get("figma")) setNotice({ kind: "info", text: "Figma connected. Now paste the links of the files that hold client work." });
+    if (q.get("connected")) setNotice({ kind: "info", text: "Connected. Watch Behind the scenes: we're reading it now." });
     if (q.get("error")) setNotice({ kind: "error", text: q.get("error")! });
     if (q.size) window.history.replaceState(null, "", "/beta");
   }, [loadMe]);
@@ -109,14 +113,26 @@ export default function BetaHome() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <ScoreHero score={score} hasWork={(figma?.stats.workItems ?? 0) > 0} hasIncome={wallets.some((w) => w.stats.payments > 0)} />
+          <ScoreHero score={score} hasWork={connections.some((c) => c.stats.workItems > 0)} hasIncome={connections.some((c) => c.stats.payments > 0)} hasId={identity?.status === "verified"} />
           <section aria-labelledby="work-h" className="space-y-3">
             <h2 id="work-h" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proof of work</h2>
             <FigmaCard key={figma?.id ?? "none"} connection={figma} oauth={me.figmaOAuth} onChange={changed} onError={onError} />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {WORK_SOURCES.map((spec) => (
+                <SourceCard key={spec.provider} spec={spec} connections={connections.filter((c) => c.provider === spec.provider)} setup={me.setup} onChange={changed} onError={onError} />
+              ))}
+            </div>
           </section>
           <section aria-labelledby="money-h" className="space-y-3">
             <h2 id="money-h" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proof of income</h2>
+            {MONEY_SOURCES.map((spec) => (
+              <SourceCard key={spec.provider} spec={spec} connections={connections.filter((c) => c.provider === spec.provider)} setup={me.setup} onChange={changed} onError={onError} />
+            ))}
             <WalletsCard wallets={wallets} onChange={changed} onError={onError} />
+          </section>
+          <section aria-labelledby="id-h" className="space-y-3">
+            <h2 id="id-h" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proof of identity</h2>
+            <IdCheckCard identity={identity} onChange={changed} />
           </section>
         </div>
 
@@ -135,9 +151,8 @@ export default function BetaHome() {
       </div>
 
       <ScoreDetails score={score} />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6">
         <PaymentsTable payments={payments} />
-        <ComingNext />
       </div>
     </div>
   );

@@ -1,8 +1,16 @@
 import { randomInt } from "node:crypto";
+import { reconcilePayments } from "@/lib/beta/reconcile";
 import { computeBetaScore } from "@/lib/beta/score";
-import type { BetaScore, BetaUser, ChainFamily, PaymentFact, WalletChallenge } from "@/lib/beta/types";
+import type { BetaScore, BetaUser, ChainFamily, IdentityCheck, OAuthProvider, PaymentFact, ProviderId, TimelineActor, WalletChallenge } from "@/lib/beta/types";
 import { checkPassword, hashPassword, newId, newToken } from "./auth";
 import { exchangeFigmaCode, figmaAuthorizeUrl, figmaOAuthConfigured, figmaWhoAmI, ProviderError, readFigmaWork, refreshFigmaIfNeeded, type FigmaSecret } from "./providers/figma";
+import { parseBankFile } from "./providers/bank-import";
+import { aiAvailable } from "./providers/email-extract";
+import { readGmailPayments } from "./providers/gmail";
+import { OAUTH, oauthAuthorizeUrl, oauthConfigured, oauthExchange, oauthRefreshIfNeeded, type OAuthSecret } from "./providers/oauth";
+import { readWisePayments } from "./providers/wise";
+import { readCanva, readDribbble, readMiro, readWebflow, type WorkRead } from "./providers/work-tools";
+import { evaluateId, type IdSubmission } from "./idcheck";
 import { classifyPayment, normalizeAddress, readWalletPayments, verifyWalletSignature, walletChallengeMessage } from "./providers/wallets";
 import { startRun, type BetaStore, type Run, type StoredConnection } from "./store";
 import type { Vault } from "./vault";
@@ -13,7 +21,7 @@ type Fetch = typeof fetch;
 const FAMILY_NAME: Record<ChainFamily, string> = { evm: "Ethereum & EVM chains", solana: "Solana", tron: "Tron" };
 const short = (a: string) => (a.length > 14 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a);
 
-export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?: Fetch; now?: () => Date }) {
+export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?: Fetch; now?: () => Date; dnsResolver?: (name: string, rr: string) => Promise<unknown> }) {
   const { store, vault } = deps;
   const f: Fetch = deps.fetch ?? ((...a) => fetch(...a));
   const now = deps.now ?? (() => new Date());
@@ -50,19 +58,31 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     );
   }
 
-  /** Payments with their status re-decided against every wallet the person owns today. */
+  /** Every payment, re-decided against today's full picture: own wallets, duplicates across sources, platform payouts. */
   function payments(userId: string): PaymentFact[] {
     const own = ownAddresses(userId);
-    return store.payments(userId).map((p) => ({ ...p, ...classifyPayment(p, own) }));
+    const withWalletRules = store.payments(userId).map((p) => (p.source === "wallet" ? { ...p, ...classifyPayment(p, own) } : p));
+    return reconcilePayments(withWalletRules);
   }
 
+  function holderNames(userId: string): { source: string; name: string }[] {
+    return store
+      .connections(userId)
+      .filter((c) => (c.provider === "wise" || c.provider === "bank") && typeof c.settings.holderName === "string" && c.settings.holderName)
+      .map((c) => ({ source: c.provider === "wise" ? "Wise" : "TBC Bank", name: String(c.settings.holderName) }));
+  }
+
+  const scoreInput = (userId: string) => ({ payments: payments(userId), work: store.work(userId), asOf: now().toISOString(), identity: store.identity(userId), holderNames: holderNames(userId) });
+
   function rescore(userId: string, run: Run): BetaScore {
-    const pays = payments(userId);
-    const work = store.work(userId);
+    const input = scoreInput(userId);
+    const pays = input.payments;
+    const work = input.work;
     const income = pays.filter((p) => p.status === "income").length;
-    run.step("trustline", `Recalculating your score from ${income} verified payment${income === 1 ? "" : "s"} and ${work.length} work fact${work.length === 1 ? "" : "s"}`, "Own transfers, exchange withdrawals and dust are left out");
+    const dupes = pays.filter((p) => p.status === "duplicate").length;
+    run.step("trustline", `Recalculating your score from ${income} verified payment${income === 1 ? "" : "s"} and ${work.length} work fact${work.length === 1 ? "" : "s"}`, `Left out: own transfers, platform payouts, exchange withdrawals, dust${dupes ? `, ${dupes} duplicate${dupes === 1 ? "" : "s"} seen in two places` : ""}`);
     const before = store.latestScore(userId);
-    const report = computeBetaScore({ payments: pays, work, asOf: now().toISOString() });
+    const report = computeBetaScore(input);
     store.saveScore(userId, report);
     if (!report.ready) run.warn("trustline", `Not enough proof for a score yet: ${report.missing[0]}`);
     else {
@@ -74,7 +94,7 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
   }
 
   function score(userId: string): BetaScore {
-    return store.latestScore(userId) ?? computeBetaScore({ payments: payments(userId), work: store.work(userId), asOf: now().toISOString() });
+    return store.latestScore(userId) ?? computeBetaScore(scoreInput(userId));
   }
 
   /* ---------- syncing ---------- */
@@ -117,6 +137,83 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     return true;
   }
 
+  function openSecret<T>(c: StoredConnection, label: string, run: Run): T {
+    if (!c.secret) throw new ProviderError(`${label} isn't signed in`);
+    run.step("trustline", `Unlocking your ${label} key from the vault`, "AES-256-GCM decrypt with the server's master key");
+    return JSON.parse(vault.open(c.secret)) as T;
+  }
+
+  async function freshOAuth(c: StoredConnection, p: OAuthProvider, run: Run): Promise<OAuthSecret> {
+    let s = openSecret<OAuthSecret>(c, OAUTH[p].label, run);
+    const fresh = await oauthRefreshIfNeeded(p, s, run, f);
+    if (fresh) {
+      s = fresh;
+      store.updateConnection(c.id, { secret: vault.seal(JSON.stringify(s)) });
+      run.ok("trustline", "Fresh key sealed in the vault");
+    }
+    return s;
+  }
+
+  function savePayments(c: StoredConnection, list: Parameters<BetaStore["addPayments"]>[2], run: Run) {
+    const added = store.addPayments(c.userId, c.id, list);
+    run.ok("trustline", `${added} new payment fact${added === 1 ? "" : "s"} saved${list.length - added ? `, ${list.length - added} already known` : ""}`);
+  }
+
+  async function syncGmail(c: StoredConnection, run: Run) {
+    const s = await freshOAuth(c, "google", run);
+    const afterEpoch = typeof c.settings.afterEpoch === "number" ? c.settings.afterEpoch : undefined;
+    const r = await readGmailPayments(s, { afterEpoch }, run, f, { resolver: deps.dnsResolver });
+    savePayments(c, r.payments, run);
+    store.updateConnection(c.id, { label: `Gmail · ${r.email}`, settings: { ...c.settings, email: r.email, afterEpoch: r.newestEpoch } });
+    return true;
+  }
+
+  async function syncWise(c: StoredConnection, run: Run) {
+    const s = openSecret<OAuthSecret>(c, "Wise", run);
+    const r = await readWisePayments(s.accessToken, run, f, now());
+    savePayments(c, r.payments, run);
+    store.updateConnection(c.id, { label: `Wise · ${r.holderName ?? "account"}`, settings: { ...c.settings, holderName: r.holderName } });
+    return true;
+  }
+
+  const WORK_READERS: Record<"canva" | "webflow" | "miro" | "dribbble", (s: OAuthSecret, run: Run, f: Fetch) => Promise<WorkRead & { memberSince?: string | null }>> = {
+    canva: readCanva,
+    webflow: readWebflow,
+    miro: readMiro,
+    dribbble: readDribbble,
+  };
+
+  async function syncWorkTool(c: StoredConnection, p: "canva" | "webflow" | "miro" | "dribbble", run: Run) {
+    const s = c.settings.mode === "token" ? openSecret<OAuthSecret>(c, OAUTH[p].label, run) : await freshOAuth(c, p, run);
+    const r = await WORK_READERS[p](s, run, f);
+    const added = store.addWork(c.userId, c.id, r.facts);
+    run.ok("trustline", `${added} new work fact${added === 1 ? "" : "s"} saved${r.facts.length - added ? `, ${r.facts.length - added} already known` : ""}`, "Stored: dates, titles, collaborators. Designs are never copied.");
+    store.updateConnection(c.id, { label: `${OAUTH[p].label} · ${r.accountName}`, settings: { ...c.settings, accountName: r.accountName, ...(r.memberSince ? { memberSince: r.memberSince } : {}) } });
+    return true;
+  }
+
+  async function syncBank(_c: StoredConnection, run: Run) {
+    run.step("bank", "TBC Bank is in test mode: transactions come from the uploaded test file. Upload a new file to change them.");
+    return true;
+  }
+
+  async function syncOne(c: StoredConnection, run: Run): Promise<boolean> {
+    switch (c.provider) {
+      case "figma":
+        return syncFigma(c, run);
+      case "wallet":
+        return syncWallet(c, run);
+      case "gmail":
+        return syncGmail(c, run);
+      case "wise":
+        return syncWise(c, run);
+      case "bank":
+        return syncBank(c, run);
+      default:
+        return syncWorkTool(c, c.provider, run);
+    }
+  }
+
   const running = new Set<string>();
   const inflight = new Set<Promise<void>>();
   const spawn = (p: Promise<void>) => {
@@ -131,7 +228,7 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     store.updateConnection(c.id, { status: "syncing" });
     run.step(trigger, trigger === "robot" ? `Daily robot: refreshing ${c.label}` : `Refreshing ${c.label}`);
     try {
-      const ready = c.provider === "figma" ? await syncFigma(c, run) : await syncWallet(c, run);
+      const ready = await syncOne(c, run);
       if (!ready) return;
       store.updateConnection(c.id, { status: "ok", lastSyncAt: now().toISOString(), lastError: null });
       rescore(c.userId, run);
@@ -239,6 +336,93 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     return c.id;
   }
 
+  /* ---------- "Sign in with …" (Google, Canva, Webflow, Miro, Dribbble) ---------- */
+
+  const OAUTH_TO_PROVIDER: Record<OAuthProvider, ProviderId> = { google: "gmail", canva: "canva", webflow: "webflow", miro: "miro", dribbble: "dribbble" };
+  const OAUTH_ACTOR: Record<OAuthProvider, TimelineActor> = { google: "google", canva: "canva", webflow: "webflow", miro: "miro", dribbble: "dribbble" };
+
+  function oauthStart(userId: string, p: OAuthProvider, redirectUri: string): { url: string } {
+    if (!OAUTH[p]) throw new ProviderError("Unknown service", 404);
+    if (!oauthConfigured(p)) throw new ProviderError(`“Sign in with ${OAUTH[p].label}” isn't set up on this server yet: add ${OAUTH[p].env.id} and ${OAUTH[p].env.secret} (see LAPTOP-GUIDE.md).`, 501);
+    const state = newToken(18);
+    const { url, verifier } = oauthAuthorizeUrl(p, state, redirectUri);
+    store.saveOAuthState(state, userId, `oauth:${p}`, verifier);
+    const run = startRun(store, userId, null);
+    run.step("you", `Clicked “Connect ${p === "google" ? "Gmail" : OAUTH[p].label}”`);
+    run.step("trustline", `Sending you to ${new URL(OAUTH[p].authUrl).host} to approve read-only access`, `Scopes: ${OAUTH[p].scopes}${verifier ? " · PKCE one-time secret" : ""} · state ${state.slice(0, 6)}… blocks hijacking`);
+    return { url };
+  }
+
+  async function oauthCallback(p: OAuthProvider, params: { state: string; code: string | null; error: string | null; redirectUri: string }): Promise<{ connectionId: string | null; error: string | null }> {
+    const st = store.takeOAuthState(params.state);
+    if (!st || st.provider !== `oauth:${p}`) return { connectionId: null, error: "This sign-in link expired. Please try again." };
+    const run = startRun(store, st.userId, null);
+    const label = OAUTH[p].label;
+    if (params.error || !params.code) {
+      run.warn("you", `${label} sign-in was cancelled`);
+      return { connectionId: null, error: `${label} sign-in was cancelled` };
+    }
+    run.ok(OAUTH_ACTOR[p], `${label} confirmed you approved access and sent back a one-time code`);
+    run.step("trustline", "Trading the code for access keys, server to server", `POST ${OAUTH[p].tokenUrl} with our app secret`);
+    try {
+      const secret = await oauthExchange(p, params.code, params.redirectUri, st.verifier, f);
+      const provider = OAUTH_TO_PROVIDER[p];
+      const c = store.createConnection({ userId: st.userId, provider, label: p === "google" ? "Gmail" : label, status: "ok", secret: vault.seal(JSON.stringify(secret)), settings: { mode: "oauth" } });
+      run.ok("trustline", "Access keys sealed in the vault", "AES-256-GCM; the database only holds ciphertext");
+      spawn(sync(c, "you", startRun(store, st.userId, c.id)));
+      return { connectionId: c.id, error: null };
+    } catch (e) {
+      run.error("trustline", `${label} sign-in failed: ${(e as Error).message}`);
+      return { connectionId: null, error: (e as Error).message };
+    }
+  }
+
+  /** Pasted tokens: Wise (read-only API token) and Webflow (site API token). */
+  function connectToken(userId: string, provider: "wise" | "webflow", token: string) {
+    const t = token.trim();
+    if (t.length < 20) throw new ProviderError("That doesn't look like a valid token");
+    const label = provider === "wise" ? "Wise" : "Webflow";
+    const run = startRun(store, userId, null);
+    run.step("you", `Pasted a read-only ${label} token`);
+    const secret: OAuthSecret = { mode: "token", accessToken: t };
+    const c = store.createConnection({ userId, provider, label, status: "ok", secret: vault.seal(JSON.stringify(secret)), settings: { mode: "token" } });
+    run.ok("trustline", "Token sealed in the vault", "AES-256-GCM; the database only holds ciphertext");
+    spawn(sync(c, "you", startRun(store, userId, c.id)));
+    return c.id;
+  }
+
+  /* ---------- TBC Bank (test mode) ---------- */
+
+  function bankImport(userId: string, filename: string, content: string) {
+    const parsed = parseBankFile(filename.slice(0, 80) || "test-file", content);
+    let c = store.connections(userId).find((x) => x.provider === "bank");
+    const stored = c ? store.connection(userId, c.id)! : store.createConnection({ userId, provider: "bank", label: "TBC Bank · test data", status: "ok", secret: null, settings: { test: true } });
+    const run = startRun(store, userId, stored.id);
+    run.step("you", `Uploaded TBC test transactions: ${filename}`);
+    run.step("bank", `Read ${parsed.rows} transaction${parsed.rows === 1 ? "" : "s"}; ${parsed.payments.length} incoming`, "Test mode: live TBC open banking isn't part of the beta");
+    store.deletePayments(stored.id);
+    savePayments(stored, parsed.payments, run);
+    store.updateConnection(stored.id, { status: "ok", lastSyncAt: now().toISOString(), lastError: null, settings: { test: true, file: filename, rows: parsed.rows, holderName: parsed.holderName } });
+    c = store.connections(userId).find((x) => x.provider === "bank");
+    rescore(userId, run);
+    return c!.id;
+  }
+
+  /* ---------- ID check ---------- */
+
+  function verifyIdentity(userId: string, input: IdSubmission): IdentityCheck {
+    const user = store.user(userId)!;
+    const run = startRun(store, userId, null);
+    run.step("you", "Photographed your ID and took a live selfie in the app", "Photos stay on your device; only the results are sent");
+    const result = evaluateId(input, { accountName: user.name, holderNames: holderNames(userId), now: now() });
+    for (const ch of result.checks) (ch.ok ? run.ok : run.warn)("trustline", `${ch.label}: ${ch.detail}`);
+    store.saveIdentity(userId, result);
+    if (result.status === "verified") run.ok("trustline", `ID verified: ${result.name}`);
+    else run.error("trustline", "ID not verified. Fix the failed checks and try again.");
+    rescore(userId, run);
+    return result;
+  }
+
   /* ---------- misc ---------- */
 
   function disconnect(userId: string, id: string) {
@@ -274,6 +458,21 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     score,
     scoreHistory: (userId: string) => store.scoreHistory(userId),
     figmaOAuthConfigured,
+    setup: () => ({
+      figma: figmaOAuthConfigured(),
+      google: oauthConfigured("google"),
+      canva: oauthConfigured("canva"),
+      webflow: oauthConfigured("webflow"),
+      miro: oauthConfigured("miro"),
+      dribbble: oauthConfigured("dribbble"),
+      ai: aiAvailable(),
+    }),
+    oauthStart,
+    oauthCallback,
+    connectToken,
+    bankImport,
+    verifyIdentity,
+    identity: (userId: string) => store.identity(userId),
     figmaStart,
     figmaCallback,
     figmaConnectToken,

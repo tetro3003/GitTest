@@ -9,6 +9,14 @@ const ACTOR: Record<TimelineActor, { label: string; chip: string; dot: string }>
   figma: { label: "Figma", chip: "bg-orange-400/15 text-orange-300", dot: "bg-orange-400" },
   blockchain: { label: "Blockchain", chip: "bg-violet-400/15 text-violet-300", dot: "bg-violet-400" },
   robot: { label: "Daily robot", chip: "bg-fuchsia-400/15 text-fuchsia-300", dot: "bg-fuchsia-400" },
+  google: { label: "Gmail", chip: "bg-red-400/15 text-red-300", dot: "bg-red-400" },
+  ai: { label: "Claude AI", chip: "bg-amber-300/15 text-amber-200", dot: "bg-amber-300" },
+  wise: { label: "Wise", chip: "bg-lime-400/15 text-lime-300", dot: "bg-lime-400" },
+  bank: { label: "TBC Bank", chip: "bg-sky-300/15 text-sky-200", dot: "bg-sky-300" },
+  canva: { label: "Canva", chip: "bg-cyan-400/15 text-cyan-300", dot: "bg-cyan-400" },
+  webflow: { label: "Webflow", chip: "bg-blue-400/15 text-blue-300", dot: "bg-blue-400" },
+  miro: { label: "Miro", chip: "bg-yellow-300/15 text-yellow-200", dot: "bg-yellow-300" },
+  dribbble: { label: "Dribbble", chip: "bg-pink-400/15 text-pink-300", dot: "bg-pink-400" },
 };
 
 const LEVEL_DOT: Record<TimelineEntry["level"], string> = {

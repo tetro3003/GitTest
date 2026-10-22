@@ -39,3 +39,24 @@ export function ChainMark({ family, className = "size-5" }: { family: ChainFamil
     </svg>
   );
 }
+
+const MARKS: Record<string, { bg: string; fg: string; text: string }> = {
+  gmail: { bg: "linear-gradient(135deg,#ea4335,#fbbc04 55%,#34a853)", fg: "#fff", text: "M" },
+  wise: { bg: "#9fe870", fg: "#163300", text: "W" },
+  bank: { bg: "linear-gradient(135deg,#00a3e0,#0057a8)", fg: "#fff", text: "TBC" },
+  canva: { bg: "linear-gradient(135deg,#00c4cc,#7d2ae8)", fg: "#fff", text: "C" },
+  webflow: { bg: "#146ef5", fg: "#fff", text: "W" },
+  miro: { bg: "#ffd02f", fg: "#050038", text: "M" },
+  dribbble: { bg: "#ea4c89", fg: "#fff", text: "D" },
+};
+
+/** Simple coloured monogram for a source (not the company's logo). */
+export function SourceMark({ provider, className = "size-12" }: { provider: keyof typeof MARKS | string; className?: string }) {
+  const m = MARKS[provider];
+  if (!m) return null;
+  return (
+    <span className={`flex shrink-0 items-center justify-center rounded-2xl font-display font-extrabold shadow-sm ring-1 ring-black/5 ${m.text.length > 1 ? "text-[11px]" : "text-lg"} ${className}`} style={{ background: m.bg, color: m.fg }} aria-hidden>
+      {m.text}
+    </span>
+  );
+}

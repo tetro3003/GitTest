@@ -1,6 +1,8 @@
 import { bandFor } from "../scoring";
 import { clamp, mean, median, round, scale, stdDev, sum } from "../scoring/math";
-import type { BetaFlag, BetaMonth, BetaReason, BetaScore, PaymentFact, WorkFact } from "./types";
+import { samePerson } from "./names";
+import { matchClients } from "./reconcile";
+import type { BetaFlag, BetaMonth, BetaReason, BetaScore, IdentityCheck, PaymentFact, WorkFact } from "./types";
 
 /**
  * Designer-beta scorer. Uses only facts read from the source (wallet payments
@@ -33,7 +35,7 @@ function lastMonths(asOf: string, n: number): string[] {
 /** Design hours per month: each saved version ≈ 30 min, capped per file per day. */
 export function workMinutesByMonth(work: readonly WorkFact[]): Map<string, number> {
   const perFileDay = new Map<string, number>();
-  for (const w of work) if (w.kind === "version") perFileDay.set(`${w.at.slice(0, 10)}|${w.item}`, (perFileDay.get(`${w.at.slice(0, 10)}|${w.item}`) ?? 0) + 1);
+  for (const w of work) if (w.kind === "version" || w.kind === "edit") perFileDay.set(`${w.at.slice(0, 10)}|${w.item}`, (perFileDay.get(`${w.at.slice(0, 10)}|${w.item}`) ?? 0) + 1);
   const out = new Map<string, number>();
   for (const [k, n] of perFileDay) {
     const m = k.slice(0, 7);
@@ -46,7 +48,7 @@ function activeWeeks(work: readonly WorkFact[], asOf: string, weeks: number): nu
   const end = new Date(asOf).getTime();
   const seen = new Set<number>();
   for (const w of work) {
-    if (w.kind !== "version") continue;
+    if (w.kind === "comment" || w.kind === "shot") continue;
     const age = (end - new Date(w.at).getTime()) / (7 * 864e5);
     if (age >= 0 && age < weeks) seen.add(Math.floor(age));
   }
@@ -55,10 +57,19 @@ function activeWeeks(work: readonly WorkFact[], asOf: string, weeks: number): nu
 
 const usd = (x: number) => `$${Math.round(x).toLocaleString("en-US")}`;
 
-export function computeBetaScore(input: { payments: readonly PaymentFact[]; work: readonly WorkFact[]; asOf: string }): BetaScore {
+export interface BetaScoreInput {
+  payments: readonly PaymentFact[];
+  work: readonly WorkFact[];
+  asOf: string;
+  identity?: IdentityCheck | null;
+  /** Account-holder names seen at money sources (Wise, bank), for the name check. */
+  holderNames?: { source: string; name: string }[];
+}
+
+export function computeBetaScore(input: BetaScoreInput): BetaScore {
   const { asOf } = input;
   const income = input.payments.filter((p) => p.status === "income");
-  const hasWork = input.work.some((w) => w.kind === "version");
+  const hasWork = input.work.some((w) => w.kind === "version" || w.kind === "edit" || w.kind === "publish");
   const months12 = lastMonths(asOf, 13).slice(0, 12); // last 12 complete months
   const recent6 = months12.slice(-6);
 
@@ -83,6 +94,8 @@ export function computeBetaScore(input: { payments: readonly PaymentFact[]; work
   const matched = incomeMonths.filter((m) => (workBy.get(m) ?? 0) > 0).length;
   const matchRatio = incomeMonths.length ? matched / incomeMonths.length : 0;
 
+  const idOk = input.identity?.status === "verified";
+  const clients = matchClients(income, input.work);
   const features = {
     verifiedMonthlyIncome,
     monthsWithIncome,
@@ -93,11 +106,15 @@ export function computeBetaScore(input: { payments: readonly PaymentFact[]; work
     activeWeeksLast12: weeksActive,
     workIncomeMatchRatio: round(matchRatio, 2),
     workHoursLast3Months: round(sum(months.slice(-3).map((m) => m.workHours)), 1),
+    clientsMatched: clients.length,
+    workTools: new Set(input.work.map((w) => w.source)).size,
+    idVerified: idOk ? 1 : 0,
   };
 
   const missing: string[] = [];
-  if (!income.length) missing.push("Connect a wallet (or, soon, Gmail / Wise / bank) that has received client payments.");
-  if (!hasWork) missing.push("Connect Figma so we can see the design work behind the income.");
+  if (!income.length) missing.push("Connect Gmail, Wise, your bank or a wallet that has received client payments.");
+  if (!hasWork) missing.push("Connect Figma, Canva, Webflow or Miro so we can see the design work behind the income.");
+  if (!idOk) missing.push("Verify your ID so the bank knows the income is yours.");
   const generatedAt = new Date(asOf).toISOString();
   if (!income.length) {
     return { ready: false, missing, score: null, band: null, verifiedMonthlyIncome: 0, maxMonthlyPayment: 0, reasons: [], flags: [], months, features, generatedAt };
@@ -117,14 +134,24 @@ export function computeBetaScore(input: { payments: readonly PaymentFact[]; work
   add("history", "Track record", scale(historyMonths, 3, 24, 0, 40), `${historyMonths} months of verifiable history.`);
   if (!hasWork) add("work", "Design work evidence", -30, "No work tool is connected, so we can't see the work behind the income.");
   else {
-    add("work", "Design work evidence", scale(weeksActive, 2, 10, -10, 50), `Figma shows you designing in ${weeksActive} of the last 12 weeks.`);
+    const tools = [...new Set(input.work.filter((w) => w.kind !== "comment").map((w) => w.source))];
+    add("work", "Design work evidence", scale(weeksActive, 2, 10, -10, 50), `Your work tools (${tools.join(", ")}) show you designing in ${weeksActive} of the last 12 weeks.`);
     add("match", "Work matches income", scale(matchRatio, 0.3, 0.9, -20, 40), `${matched} of ${incomeMonths.length} paid months also show design work.`);
   }
 
+  if (clients.length) add("client_match", "Clients seen in work and payments", scale(clients.length, 1, 3, 10, 30), `${clients.map((c) => `${c.payer} (${c.evidence})`).slice(0, 3).join(", ")} appear both in your work and in who paid you.`);
+  if (idOk) add("identity", "ID verified", 20, `Your ID was checked: ${input.identity!.name}.`);
+
   const flags: BetaFlag[] = [];
+  if (idOk)
+    for (const h of input.holderNames ?? [])
+      if (!samePerson(h.name, input.identity!.name))
+        flags.push({ id: `name_mismatch_${h.source}`, severity: "high", title: "Name doesn't match", detail: `${h.source} belongs to “${h.name}”, but the ID says “${input.identity!.name}”. Income must go to the applicant's own account.` });
   const lastFull = series12[series12.length - 1];
-  const prior = median(series12.slice(-7, -1));
-  if (lastFull > 1000 && lastFull > 3 * Math.max(prior, 1)) {
+  const priorMonths = series12.slice(-7, -1);
+  const prior = median(priorMonths);
+  // Only meaningful with an established pattern: at least 3 of the 6 months before had income.
+  if (priorMonths.filter((x) => x > 0).length >= 3 && lastFull > 1000 && lastFull > 3 * Math.max(prior, 1)) {
     flags.push({ id: "income_spike", severity: "medium", title: "Sudden income jump", detail: `${usd(lastFull)} last month vs a usual ${usd(prior)}. Money appearing just before applying is a common trick.` });
     add("spike", "Sudden income jump", -40, "Last month's income is far above your usual level.");
   }

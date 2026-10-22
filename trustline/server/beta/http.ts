@@ -1,4 +1,4 @@
-import type { BetaUser, ChainFamily } from "@/lib/beta/types";
+import type { BetaUser, ChainFamily, OAuthProvider } from "@/lib/beta/types";
 import { SESSION_DAYS } from "./store";
 import { ProviderError, type BetaService } from "./service";
 
@@ -73,6 +73,15 @@ export function createBetaHttp(service: BetaService) {
         return new Response(null, { status: 302, headers: { Location: `${publicOrigin(req)}${to}` } });
       }
 
+      const oauthCb = route.match(/^oauth\/(google|canva|webflow|miro|dribbble)\/callback$/);
+      if (method === "GET" && oauthCb) {
+        const p = oauthCb[1] as OAuthProvider;
+        const q = new URL(req.url).searchParams;
+        const r = await service.oauthCallback(p, { state: q.get("state") ?? "", code: q.get("code"), error: q.get("error"), redirectUri: `${publicOrigin(req)}/api/beta/oauth/${p}/callback` });
+        const to = r.connectionId ? `/beta?connected=${r.connectionId}` : `/beta?error=${encodeURIComponent(r.error ?? "Sign-in failed")}`;
+        return new Response(null, { status: 302, headers: { Location: `${publicOrigin(req)}${to}` } });
+      }
+
       /* ----- logged in ----- */
       const token = cookieFrom(req);
       const user: BetaUser | null = token ? service.userForSession(token) : null;
@@ -82,7 +91,29 @@ export function createBetaHttp(service: BetaService) {
         service.logout(token!);
         return json({ ok: true }, 200, { "Set-Cookie": sessionCookie("", req, true) });
       }
-      if (method === "GET" && route === "me") return json({ user, figmaOAuth: service.figmaOAuthConfigured() });
+      if (method === "GET" && route === "me") return json({ user, figmaOAuth: service.figmaOAuthConfigured(), setup: service.setup() });
+      if (method === "GET" && route === "identity") return json({ identity: service.identity(user.id) });
+      if (method === "POST" && route === "identity") {
+        const b = await body(req);
+        const live = (b.liveness ?? {}) as Record<string, unknown>;
+        const sim = typeof b.faceSimilarity === "number" ? b.faceSimilarity : 0;
+        return json({ identity: service.verifyIdentity(user.id, { mrz: s(b, "mrz").slice(0, 300), liveness: { blink: live.blink === true, turn: live.turn === true, realScore: typeof live.realScore === "number" ? live.realScore : undefined }, faceSimilarity: Math.max(0, Math.min(1, sim)) }) });
+      }
+      const oauthStart = route.match(/^oauth\/(google|canva|webflow|miro|dribbble)\/start$/);
+      if (method === "POST" && oauthStart) {
+        const p = oauthStart[1] as OAuthProvider;
+        return json(service.oauthStart(user.id, p, `${publicOrigin(req)}/api/beta/oauth/${p}/callback`));
+      }
+      if (method === "POST" && (route === "wise/token" || route === "webflow/token")) {
+        const b = await body(req);
+        return json({ connectionId: service.connectToken(user.id, route.split("/")[0] as "wise" | "webflow", s(b, "token")) }, 201);
+      }
+      if (method === "POST" && route === "bank/import") {
+        const b = await body(req);
+        const content = s(b, "content");
+        if (content.length > 5_000_000) throw new ProviderError("The file is too big (max 5 MB)", 413);
+        return json({ connectionId: service.bankImport(user.id, s(b, "filename"), content) }, 201);
+      }
       if (method === "GET" && route === "connections") return json(service.connections(user.id));
       if (method === "GET" && route === "timeline") return json(service.timeline(user.id, Number(new URL(req.url).searchParams.get("after") ?? 0)));
       if (method === "GET" && route === "score") return json({ score: service.score(user.id), history: service.scoreHistory(user.id) });

@@ -86,6 +86,13 @@ export function migrateBeta(db: Database.Database) {
     );
     CREATE INDEX IF NOT EXISTS beta_timeline_by_user ON beta_timeline (user_id, id);
 
+    CREATE TABLE IF NOT EXISTS beta_identity (
+      user_id TEXT PRIMARY KEY REFERENCES beta_users(id) ON DELETE CASCADE,
+      status TEXT NOT NULL,
+      report TEXT NOT NULL,
+      verified_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS beta_scores (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL REFERENCES beta_users(id) ON DELETE CASCADE,
@@ -94,4 +101,12 @@ export function migrateBeta(db: Database.Database) {
       report TEXT NOT NULL
     );
   `);
+  // Columns added after the first beta release.
+  const addColumn = (table: string, column: string, type: string) => {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!cols.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  };
+  addColumn("beta_oauth_states", "verifier", "TEXT");
+  addColumn("beta_work", "source", "TEXT NOT NULL DEFAULT 'figma'");
+  addColumn("beta_payments", "source", "TEXT NOT NULL DEFAULT 'wallet'");
 }

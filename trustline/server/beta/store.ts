@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { BetaConnection, BetaScore, BetaUser, ConnectionStatus, PaymentFact, ProviderId, TimelineActor, TimelineEntry, TimelineLevel, WorkFact } from "@/lib/beta/types";
+import type { BetaConnection, BetaScore, BetaUser, ConnectionStatus, IdentityCheck, PaymentFact, ProviderId, TimelineActor, TimelineEntry, TimelineLevel, WorkFact } from "@/lib/beta/types";
 import { newId, newToken, sha256 } from "./auth";
 import { migrateBeta } from "./schema";
 
@@ -113,19 +113,20 @@ export function createBetaStore(db: Database.Database) {
     },
     /** Connections the daily robot should refresh: ready and not synced since `cutoff`. */
     connectionsDue(cutoff: string): StoredConnection[] {
-      const rows = db.prepare("SELECT * FROM beta_connections WHERE status IN ('ok', 'error') AND (last_sync_at IS NULL OR last_sync_at < ?)").all(cutoff) as ConnectionRow[];
+      const rows = db.prepare("SELECT * FROM beta_connections WHERE status IN ('ok', 'error') AND provider != 'bank' AND (last_sync_at IS NULL OR last_sync_at < ?)").all(cutoff) as ConnectionRow[];
       return rows.map(toConn);
     },
 
     /* ----- one-time states ----- */
-    saveOAuthState(state: string, userId: string, provider: ProviderId) {
-      db.prepare("INSERT INTO beta_oauth_states (state, user_id, provider, created_at) VALUES (?, ?, ?, ?)").run(state, userId, provider, now());
+    /** `provider` is a ProviderId or an OAuth provider name; `verifier` is the PKCE secret when used. */
+    saveOAuthState(state: string, userId: string, provider: string, verifier: string | null = null) {
+      db.prepare("INSERT INTO beta_oauth_states (state, user_id, provider, created_at, verifier) VALUES (?, ?, ?, ?, ?)").run(state, userId, provider, now(), verifier);
     },
-    takeOAuthState(state: string): { userId: string; provider: ProviderId } | null {
-      const r = db.prepare("SELECT user_id, provider, created_at FROM beta_oauth_states WHERE state = ?").get(state) as { user_id: string; provider: ProviderId; created_at: string } | undefined;
+    takeOAuthState(state: string): { userId: string; provider: string; verifier: string | null } | null {
+      const r = db.prepare("SELECT user_id, provider, created_at, verifier FROM beta_oauth_states WHERE state = ?").get(state) as { user_id: string; provider: string; created_at: string; verifier: string | null } | undefined;
       db.prepare("DELETE FROM beta_oauth_states WHERE state = ?").run(state);
       if (!r || Date.now() - new Date(r.created_at).getTime() > 15 * 60_000) return null;
-      return { userId: r.user_id, provider: r.provider };
+      return { userId: r.user_id, provider: r.provider, verifier: r.verifier };
     },
     saveChallenge(c: { id: string; userId: string; family: string; address: string; message: string; expiresAt: string }) {
       db.prepare("INSERT INTO beta_wallet_challenges (id, user_id, family, address, message, expires_at) VALUES (?, ?, ?, ?, ?, ?)").run(c.id, c.userId, c.family, c.address, c.message, c.expiresAt);
@@ -140,18 +141,30 @@ export function createBetaStore(db: Database.Database) {
     /* ----- facts ----- */
     /** Inserts facts that aren't stored yet; returns how many were new. */
     addWork(userId: string, connectionId: string, facts: readonly NewWork[]): number {
-      const ins = db.prepare("INSERT OR IGNORE INTO beta_work (user_id, connection_id, ext_id, at, kind, item, person) VALUES (?, ?, ?, ?, ?, ?, ?)");
-      return db.transaction(() => facts.reduce((n, f) => n + ins.run(userId, connectionId, f.extId, f.at, f.kind, f.item, f.person).changes, 0))();
+      const ins = db.prepare("INSERT OR IGNORE INTO beta_work (user_id, connection_id, ext_id, at, kind, item, person, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+      return db.transaction(() => facts.reduce((n, f) => n + ins.run(userId, connectionId, f.extId, f.at, f.kind, f.item, f.person, f.source).changes, 0))();
     },
     addPayments(userId: string, connectionId: string, facts: readonly NewPayment[]): number {
-      const ins = db.prepare("INSERT OR IGNORE INTO beta_payments (user_id, connection_id, ext_id, at, amount_usd, asset, chain, payer, payer_label, status, note, proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-      return db.transaction(() => facts.reduce((n, f) => n + ins.run(userId, connectionId, f.extId, f.at, f.amountUsd, f.asset, f.chain, f.payer, f.payerLabel, f.status, f.note, f.proof).changes, 0))();
+      const ins = db.prepare("INSERT OR IGNORE INTO beta_payments (user_id, connection_id, ext_id, at, amount_usd, asset, chain, payer, payer_label, status, note, proof, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      return db.transaction(() => facts.reduce((n, f) => n + ins.run(userId, connectionId, f.extId, f.at, f.amountUsd, f.asset, f.chain, f.payer, f.payerLabel, f.status, f.note, f.proof, f.source).changes, 0))();
+    },
+    deletePayments(connectionId: string) {
+      db.prepare("DELETE FROM beta_payments WHERE connection_id = ?").run(connectionId);
     },
     work(userId: string): WorkFact[] {
-      return db.prepare("SELECT at, kind, item, person FROM beta_work WHERE user_id = ? ORDER BY at").all(userId) as WorkFact[];
+      return db.prepare("SELECT at, source, kind, item, person FROM beta_work WHERE user_id = ? ORDER BY at").all(userId) as WorkFact[];
     },
-    payments(userId: string): PaymentFact[] {
-      return db.prepare("SELECT at, amount_usd AS amountUsd, asset, chain, payer, payer_label AS payerLabel, status, note, proof FROM beta_payments WHERE user_id = ? ORDER BY at DESC").all(userId) as PaymentFact[];
+    payments(userId: string): (PaymentFact & { connectionId: string })[] {
+      return db.prepare("SELECT at, source, amount_usd AS amountUsd, asset, chain, payer, payer_label AS payerLabel, status, note, proof, connection_id AS connectionId FROM beta_payments WHERE user_id = ? ORDER BY at DESC").all(userId) as (PaymentFact & { connectionId: string })[];
+    },
+
+    /* ----- identity ----- */
+    saveIdentity(userId: string, check: IdentityCheck) {
+      db.prepare("INSERT INTO beta_identity (user_id, status, report, verified_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET status = excluded.status, report = excluded.report, verified_at = excluded.verified_at").run(userId, check.status, JSON.stringify(check), check.verifiedAt);
+    },
+    identity(userId: string): IdentityCheck | null {
+      const r = db.prepare("SELECT report FROM beta_identity WHERE user_id = ?").get(userId) as { report: string } | undefined;
+      return r ? (JSON.parse(r.report) as IdentityCheck) : null;
     },
 
     /* ----- timeline ----- */

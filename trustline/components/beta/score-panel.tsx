@@ -71,7 +71,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   );
 }
 
-export function ScoreHero({ score, hasWork, hasIncome }: { score: BetaScore | null; hasWork: boolean; hasIncome: boolean }) {
+export function ScoreHero({ score, hasWork, hasIncome, hasId }: { score: BetaScore | null; hasWork: boolean; hasIncome: boolean; hasId: boolean }) {
   const ready = !!score?.ready && score.score != null;
   return (
     <section className="night relative overflow-hidden rounded-3xl p-6 sm:p-8" aria-labelledby="score-h">
@@ -86,17 +86,18 @@ export function ScoreHero({ score, hasWork, hasIncome }: { score: BetaScore | nu
                 <Stat label="Verified income / month" value={usd(score!.verifiedMonthlyIncome)} hint="Typical of last 6 months" />
                 <Stat label="Safe monthly payment" value={usd(score!.maxMonthlyPayment)} hint="30% until bank data is in" />
                 <Stat label="Paying clients" value={String(score!.features.distinctPayers ?? 0)} hint="Last 12 months" />
-                <Stat label="Active design weeks" value={`${score!.features.activeWeeksLast12 ?? 0}/12`} hint="From Figma history" />
+                <Stat label="Active design weeks" value={`${score!.features.activeWeeksLast12 ?? 0}/12`} hint={`From ${score!.features.workTools ?? 0} work tool${score!.features.workTools === 1 ? "" : "s"}`} />
               </div>
             </>
           ) : (
             <>
               <p className="font-display text-2xl font-bold">Unlock your score</p>
-              <p className="mt-1 text-sm night-muted">We only score what we can prove. Two steps:</p>
+              <p className="mt-1 text-sm night-muted">We only score what we can prove:</p>
               <ol className="mt-5 space-y-3">
                 {[
-                  { done: hasWork, title: "Connect Figma and choose your client files", sub: "Proves the work is real" },
-                  { done: hasIncome, title: "Add a wallet that received client payments", sub: "Proves the money is real" },
+                  { done: hasWork, title: "Connect a work tool: Figma, Canva, Webflow or Miro", sub: "Proves the work is real" },
+                  { done: hasIncome, title: "Connect where clients pay you: Gmail, Wise, bank or a wallet", sub: "Proves the money is real" },
+                  { done: hasId, title: "Check your ID", sub: "Proves the income is yours (adds points; not required to see a score)" },
                 ].map((s, i) => (
                   <li key={s.title} className="flex items-center gap-3">
                     <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold", s.done ? "border-emerald-400 bg-emerald-400 text-[#06281f]" : "border-white/25")}>{s.done ? <Check className="size-4" /> : i + 1}</span>

@@ -189,7 +189,7 @@ export async function readEvmPayments(address: string, run: Run, f: Fetch = fetc
         const amount = Number(t.total.value) / 10 ** decimals;
         const tx = t.transaction_hash ?? t.tx_hash ?? "";
         const label = t.from.name ?? t.from.metadata?.tags?.[0]?.name ?? null;
-        out.push({ extId: `${chain.id}:${tx}:${t.log_index ?? 0}`, at: t.timestamp, amountUsd: amount, asset: symbol, chain: chain.name, payer: t.from.hash.toLowerCase(), payerLabel: label, proof: chain.txUrl + tx });
+        out.push({ source: "wallet", extId: `${chain.id}:${tx}:${t.log_index ?? 0}`, at: t.timestamp, amountUsd: amount, asset: symbol, chain: chain.name, payer: t.from.hash.toLowerCase(), payerLabel: label, proof: chain.txUrl + tx });
         found++;
       }
       if (!r.next_page_params) break;
@@ -211,7 +211,7 @@ export async function readTronPayments(address: string, run: Run, f: Fetch = fet
     const r = await getJson<{ data: { transaction_id: string; block_timestamp: number; from: string; to: string; value: string; token_info: { address: string; decimals: number } }[]; meta?: { fingerprint?: string } }>(f, base + (fingerprint ? `&fingerprint=${fingerprint}` : ""), { headers });
     for (const t of r.data) {
       if (t.to !== address || t.token_info.address !== TRON_USDT) continue;
-      out.push({ extId: `tron:${t.transaction_id}`, at: new Date(t.block_timestamp).toISOString(), amountUsd: Number(t.value) / 10 ** t.token_info.decimals, asset: "USDT", chain: "Tron", payer: t.from, payerLabel: null, proof: `https://tronscan.org/#/transaction/${t.transaction_id}` });
+      out.push({ source: "wallet", extId: `tron:${t.transaction_id}`, at: new Date(t.block_timestamp).toISOString(), amountUsd: Number(t.value) / 10 ** t.token_info.decimals, asset: "USDT", chain: "Tron", payer: t.from, payerLabel: null, proof: `https://tronscan.org/#/transaction/${t.transaction_id}` });
     }
     fingerprint = r.meta?.fingerprint ?? "";
     if (!fingerprint) break;
@@ -250,7 +250,7 @@ export async function readSolanaPayments(address: string, run: Run, f: Fetch = f
         const delta = bal(tx.meta.postTokenBalances, address) - bal(tx.meta.preTokenBalances, address);
         if (delta <= 0) continue;
         const sender = tx.meta.preTokenBalances.find((b) => b.mint === mint && b.owner && b.owner !== address && (b.uiTokenAmount.uiAmount ?? 0) > bal(tx.meta.postTokenBalances, b.owner!));
-        out.push({ extId: `sol:${s.signature}:${symbol}`, at: new Date(tx.blockTime * 1000).toISOString(), amountUsd: delta, asset: symbol, chain: "Solana", payer: sender?.owner ?? "unknown", payerLabel: null, proof: `https://solscan.io/tx/${s.signature}` });
+        out.push({ source: "wallet", extId: `sol:${s.signature}:${symbol}`, at: new Date(tx.blockTime * 1000).toISOString(), amountUsd: delta, asset: symbol, chain: "Solana", payer: sender?.owner ?? "unknown", payerLabel: null, proof: `https://solscan.io/tx/${s.signature}` });
       }
     }
   }

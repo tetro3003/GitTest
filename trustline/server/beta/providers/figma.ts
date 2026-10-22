@@ -136,14 +136,14 @@ export async function readFigmaWork(secret: FigmaSecret, fileLinks: readonly str
       const ageDays = (Date.now() - new Date(oldest).getTime()) / 864e5;
       if (ageDays < 32 && versions.length >= 20) run.warn("figma", "History stops about 30 days back. Figma's free plan keeps only 30 days of versions, so the daily robot will build your history up day by day.");
     }
-    for (const v of mine) facts.push({ extId: `v:${v.id}`, at: v.created_at, kind: "version", item: file.name, person: null });
+    for (const v of mine) facts.push({ extId: `v:${v.id}`, at: v.created_at, source: "figma", kind: "version", item: file.name, person: null });
 
     run.step("trustline", `Reading comments on “${file.name}”`, `GET /v1/files/${key}/comments`);
     const { comments } = await get<{ comments: Comment[] }>(`/v1/files/${key}/comments`);
     const others = comments.filter((c) => c.user?.id !== account.id);
     const people = [...new Set(others.map((c) => c.user?.handle ?? "someone"))];
     run.ok("figma", `${comments.length} comments, ${others.length} from other people${people.length ? ` (${people.slice(0, 4).join(", ")}${people.length > 4 ? "…" : ""})` : ""}`, "Comments from other people are a sign of real clients reviewing the work");
-    for (const c of others) facts.push({ extId: `c:${c.id}`, at: c.created_at, kind: "comment", item: file.name, person: c.user?.handle ?? null });
+    for (const c of others) facts.push({ extId: `c:${c.id}`, at: c.created_at, source: "figma", kind: "comment", item: file.name, person: c.user?.handle ?? null });
   }
   return { account, facts };
 }
