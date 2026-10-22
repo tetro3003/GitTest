@@ -1,6 +1,6 @@
 "use client";
 
-import type { BankIdentity, BetaConnection, BetaScore, BetaUser, ChainFamily, IdentityCheck, OAuthProvider, PaymentFact, TimelineEntry, WalletChallenge } from "./types";
+import type { BankIdentity, BetaConnection, BetaScore, BetaUser, ChainFamily, IdentityCheck, OAuthProvider, PaymentFact, TimelineEntry, WalletChallenge, WorkFact } from "./types";
 
 export type SetupState = Record<"figma" | OAuthProvider | "ai" | "tbcId" | "bogId", boolean>;
 
@@ -38,6 +38,7 @@ export const betaApi = {
   timeline: (after = 0) => call<TimelineEntry[]>("GET", `timeline?after=${after}`),
   score: () => call<{ score: BetaScore; history: { at: string; score: number | null }[] }>("GET", "score"),
   payments: () => call<PaymentFact[]>("GET", "payments"),
+  work: () => call<WorkFact[]>("GET", "work"),
   figmaStart: () => call<{ url: string }>("POST", "figma/start", {}),
   figmaToken: (token: string) => call<{ connectionId: string }>("POST", "figma/token", { token }),
   setFiles: (id: string, files: string[]) => call("POST", `connections/${id}/files`, { files }),

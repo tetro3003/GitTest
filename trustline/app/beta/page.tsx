@@ -8,12 +8,13 @@ import { BankIdCard } from "@/components/beta/bank-id-card";
 import { IdCheckCard } from "@/components/beta/id-check";
 import { MONEY_SOURCES, SourceCard, WORK_SOURCES } from "@/components/beta/source-card";
 import { PaymentsTable } from "@/components/beta/payments-table";
+import { WorkTable } from "@/components/beta/work-table";
 import { ScoreDetails, ScoreHero } from "@/components/beta/score-panel";
 import { Timeline } from "@/components/beta/timeline";
 import { WalletsCard } from "@/components/beta/wallets";
 import { Button } from "@/components/ui/button";
 import { BetaApiError, betaApi, type SetupState } from "@/lib/beta/client";
-import type { BankIdentity, BetaConnection, BetaScore, BetaUser, IdentityCheck, PaymentFact, TimelineEntry } from "@/lib/beta/types";
+import type { BankIdentity, BetaConnection, BetaScore, BetaUser, IdentityCheck, PaymentFact, TimelineEntry, WorkFact } from "@/lib/beta/types";
 
 export default function BetaHome() {
   const [me, setMe] = useState<{ user: BetaUser; figmaOAuth: boolean; setup: SetupState } | null | undefined>(undefined);
@@ -22,6 +23,7 @@ export default function BetaHome() {
   const [connections, setConnections] = useState<BetaConnection[]>([]);
   const [score, setScore] = useState<BetaScore | null>(null);
   const [payments, setPayments] = useState<PaymentFact[]>([]);
+  const [work, setWork] = useState<WorkFact[]>([]);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
   const [showTech, setShowTech] = useState(true);
@@ -39,7 +41,8 @@ export default function BetaHome() {
 
   const refresh = useCallback(async () => {
     try {
-      const [c, s, p, t, id] = await Promise.all([betaApi.connections(), betaApi.score(), betaApi.payments(), betaApi.timeline(lastId.current), betaApi.identity()]);
+      const [c, s, p, t, id, w] = await Promise.all([betaApi.connections(), betaApi.score(), betaApi.payments(), betaApi.timeline(lastId.current), betaApi.identity(), betaApi.work()]);
+      setWork(w);
       setIdentity(id.identity);
       setBankIds(id.banks);
       setConnections(c);
@@ -161,6 +164,7 @@ export default function BetaHome() {
 
       <ScoreDetails score={score} />
       <div className="grid grid-cols-1 gap-6">
+        <WorkTable work={work} />
         <PaymentsTable payments={payments} />
       </div>
     </div>

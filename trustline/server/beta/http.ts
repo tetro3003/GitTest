@@ -127,6 +127,7 @@ export function createBetaHttp(service: BetaService) {
       if (method === "GET" && route === "timeline") return json(service.timeline(user.id, Number(new URL(req.url).searchParams.get("after") ?? 0)));
       if (method === "GET" && route === "score") return json({ score: service.score(user.id), history: service.scoreHistory(user.id) });
       if (method === "GET" && route === "payments") return json(service.payments(user.id));
+      if (method === "GET" && route === "work") return json(service.work(user.id));
 
       if (method === "POST" && route === "figma/start") return json(service.figmaStart(user.id, `${publicOrigin(req)}/api/beta/figma/callback`));
       if (method === "POST" && route === "figma/token") {
