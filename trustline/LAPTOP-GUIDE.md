@@ -138,7 +138,7 @@ In every app, set the **redirect / callback URL** exactly as shown.
 
 | Company | Where | Redirect URL | Notes |
 |---|---|---|---|
-| **Google (Gmail)** | console.cloud.google.com → new project → **APIs & Services → Library → Gmail API → Enable** → **OAuth consent screen** (External, add your email as a *test user*) → **Credentials → Create OAuth client ID → Web application** | `http://localhost:3000/api/beta/oauth/google/callback` | Fill `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`. While the app is in "Testing", only the test users you add can connect. |
+| **Google (Gmail)** | console.cloud.google.com → new project → search **Gmail API → Enable** → **Google Auth Platform → Get started** (Audience: External) → **Audience → Test users**: add your Gmail → **Clients → + Create client → Web application** | `http://localhost:3000/api/beta/oauth/google/callback` | Fill `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`. While the app is in "Testing", only the test users you add can connect. |
 | **Canva** | canva.com/developers → **Your integrations → Create** → scopes **design:meta:read**, **profile:read** | `http://127.0.0.1:3000/api/beta/oauth/canva/callback` | Canva doesn't accept `localhost`: open the app at **http://127.0.0.1:3000/beta** (log in again there) when connecting Canva. |
 | **Webflow** | Workspace settings → **Apps & Integrations → Develop → Create an App** → scopes Sites read, Pages read, Authorized user read | `http://localhost:3000/api/beta/oauth/webflow/callback` | Or just use a site token (above). |
 | **Miro** | miro.com/app/settings → **Your apps → Create new app** → permission **boards:read** | `http://localhost:3000/api/beta/oauth/miro/callback` | |

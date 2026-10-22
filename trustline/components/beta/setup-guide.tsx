@@ -23,16 +23,17 @@ interface Guide {
 const GUIDES: Record<OAuthProvider, Guide> = {
   google: {
     site: "Google Cloud Console",
-    url: "https://console.cloud.google.com/apis/credentials",
+    url: "https://console.cloud.google.com/auth/overview",
     steps: [
-      <>Create a project (top bar → project picker → <strong>New project</strong>).</>,
-      <><strong>APIs &amp; Services → Library</strong> → search <strong>Gmail API</strong> → <strong>Enable</strong>.</>,
-      <><strong>OAuth consent screen</strong> → External → fill the app name and your email → under <strong>Test users</strong> add the Gmail address you&apos;ll connect.</>,
-      <><strong>Credentials → Create credentials → OAuth client ID → Web application</strong>. Under <strong>Authorized redirect URIs</strong> paste the address below.</>,
-      <>Copy the <strong>Client ID</strong> and <strong>Client secret</strong>.</>,
+      <>Create or pick a project (top bar → project picker → <strong>New project</strong>).</>,
+      <>Search <strong>Gmail API</strong> in the top search bar → <strong>Enable</strong>.</>,
+      <>Open <strong>Google Auth Platform</strong> → <strong>Get started</strong>: app name, your email → Audience <strong>External</strong> → contact email → agree → <strong>Create</strong>.</>,
+      <>Left menu <strong>Audience → Test users → + Add users</strong>: add the Gmail address you&apos;ll connect → <strong>Save</strong>.</>,
+      <>Left menu <strong>Clients → + Create client → Web application</strong>. Under <strong>Authorized redirect URIs</strong> click <strong>+ Add URI</strong> and paste the address below → <strong>Create</strong>.</>,
+      <>Copy the <strong>Client ID</strong> and <strong>Client secret</strong> from the window that opens (or click the client&apos;s name later).</>,
     ],
     env: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
-    note: <>While the app is in &quot;Testing&quot;, only the test users you added can connect. That&apos;s fine for the beta.</>,
+    note: <>While the app is in &quot;Testing&quot;, only the test users you added can connect, and Google shows &quot;Google hasn&apos;t verified this app&quot;: click <strong>Continue</strong>. That&apos;s fine for the beta.</>,
   },
   canva: {
     site: "Canva Developers",
