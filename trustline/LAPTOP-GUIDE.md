@@ -117,12 +117,35 @@ curl -H "Authorization: Bearer tl_demo_citybank_key" http://localhost:3000/api/v
 
 ---
 
-## 5. Start over
+## 5. Designer beta (real data, real accounts)
+
+Open **http://localhost:3000/beta**. This part uses no demo data: everything is read live from Figma and the blockchain.
+
+1. **Create an account** (name, email, password).
+2. **Figma.** Click *Use a personal access token*:
+   Figma → your avatar → **Settings → Security → Personal access tokens → Generate**.
+   Give it *read* access to File content, File versions and Comments. Paste it, then paste the links of 1–3 Figma files with real client work and click **Save and read files**.
+   Watch **Behind the scenes** on the right: every call to Figma appears as it happens.
+3. **Wallets.** Click **Add wallet**, pick the network, then **Connect & sign** with MetaMask, Phantom or TronLink.
+   Signing is free and moves no money. You can add as many wallets as you like.
+   No browser extension? Use **Sign manually** with any wallet app that can "sign a message".
+4. Your score appears once there is both proof of work and proof of income.
+5. The **daily robot** re-reads every connection once a day while the app is running. **Refresh** does it now.
+
+**"Sign in with Figma" button (optional).** Create a Figma app at https://www.figma.com/developers/apps
+with callback URL `http://localhost:3000/api/beta/figma/callback`. Copy `.env.example` to `.env.local`,
+fill in `FIGMA_CLIENT_ID` and `FIGMA_CLIENT_SECRET`, and restart `npm run dev`.
+
+Access keys are encrypted before they are saved. The encryption key is in `trustline/data/vault.key`: never share it.
+
+---
+
+## 6. Start over
 
 - In the app: **Demo → Reset demo**.
 - Or stop the app (`Ctrl + C`), run `npm run reset-db`, then `npm run dev` again.
 
-## 6. If something goes wrong
+## 7. If something goes wrong
 
 | Problem | Fix |
 |---|---|
@@ -133,10 +156,10 @@ curl -H "Authorization: Bearer tl_demo_citybank_key" http://localhost:3000/api/v
 | Tracker says it can't read the app | Mac: allow Terminal in *Accessibility* (see 4C). Linux: install `xdotool`. |
 | GitHub says it's rate-limiting | Wait a minute. GitHub allows a few lookups per minute without a token. |
 
-## 7. Run the automated checks (optional)
+## 8. Run the automated checks (optional)
 
 ```
 npm test
 ```
 
-This runs 59 tests covering scoring, fraud checks, the API, file imports and connectors. All should pass.
+This runs 72 tests covering scoring, fraud checks, the API, file imports and connectors. All should pass.

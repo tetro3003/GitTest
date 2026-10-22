@@ -28,6 +28,7 @@
     "react-dom": "19.1.0",
     "recharts": "^3.10.1",
     "tailwind-merge": "^3.7.0",
+    "viem": "^2.57.10",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

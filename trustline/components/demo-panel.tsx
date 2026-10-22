@@ -52,6 +52,8 @@ export function DemoPanel() {
     }
   };
 
+  if (pathname.startsWith("/beta")) return null;
+
   return (
     <div className="no-print fixed bottom-20 right-4 z-40 sm:bottom-5 sm:right-5">
       {panelOpen ? (
