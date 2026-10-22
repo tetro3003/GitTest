@@ -52,9 +52,10 @@ const GUIDES: Record<OAuthProvider, Guide> = {
     url: "https://webflow.com/dashboard",
     steps: [
       <>Workspace settings → <strong>Apps &amp; Integrations → Develop → Create an App</strong>.</>,
-      <>Choose <strong>Data client (REST API)</strong>. Scopes: <strong>Sites: read</strong>, <strong>Pages: read</strong>, <strong>Authorized user: read</strong>.</>,
-      <>Set the <strong>Redirect URI</strong> to the address below.</>,
-      <>Copy the <strong>Client ID</strong> and <strong>Client secret</strong>.</>,
+      <><strong>App info</strong>: any name, description and homepage URL → <strong>Continue</strong>.</>,
+      <><strong>Building blocks</strong>: switch on <strong>Data client (REST API)</strong>. Paste the address below as the <strong>Redirect URI</strong>.</>,
+      <>In the scopes list choose <strong>Read</strong> for <strong>Authorized user</strong>, <strong>Pages</strong> and <strong>Sites</strong>; leave everything else on no access → create the app.</>,
+      <>On the app&apos;s page, copy the <strong>Client ID</strong> and <strong>Client secret</strong>.</>,
     ],
     env: ["WEBFLOW_CLIENT_ID", "WEBFLOW_CLIENT_SECRET"],
     note: <>Quicker option: close this and click <strong>Use a site token</strong>. It works right away for one site.</>,
