@@ -22,7 +22,8 @@ function sessionCookie(token: string, req: Request, clear = false) {
   return `${COOKIE}=${clear ? "" : encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${clear ? 0 : SESSION_DAYS * 86400}${secure}`;
 }
 
-const publicOrigin = (req: Request) => process.env.PUBLIC_URL?.replace(/\/$/, "") ?? new URL(req.url).origin;
+/** Hosted: PUBLIC_URL. On a laptop it's left empty, so use the address the browser used. */
+const publicOrigin = (req: Request) => process.env.PUBLIC_URL?.trim().replace(/\/$/, "") || new URL(req.url).origin;
 
 async function body(req: Request): Promise<Record<string, unknown>> {
   try {
@@ -49,7 +50,7 @@ export function createBetaHttp(service: BetaService) {
     try {
       if (method !== "GET") {
         const origin = req.headers.get("origin");
-        if (origin && origin !== new URL(req.url).origin && origin !== process.env.PUBLIC_URL?.replace(/\/$/, "")) throw new ProviderError("Cross-site request blocked", 403);
+        if (origin && origin !== new URL(req.url).origin && origin !== process.env.PUBLIC_URL?.trim().replace(/\/$/, "")) throw new ProviderError("Cross-site request blocked", 403);
         if (method === "POST" && !(req.headers.get("content-type") ?? "").includes("application/json")) throw new ProviderError("Send JSON", 415);
       }
 

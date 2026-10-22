@@ -228,7 +228,7 @@ interface TokenBalance {
 }
 
 export async function readSolanaPayments(address: string, run: Run, f: Fetch = fetch, maxTx = 60): Promise<RawPayment[]> {
-  const url = process.env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
+  const url = process.env.SOLANA_RPC_URL?.trim() || "https://api.mainnet-beta.solana.com";
   let rpcId = 0;
   const rpc = async <T>(method: string, params: unknown[]): Promise<T> => {
     const r = await getJson<{ result?: T; error?: { message: string } }>(f, url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method, params }) });

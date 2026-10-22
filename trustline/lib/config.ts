@@ -57,12 +57,12 @@ export const SEGMENT_BENCHMARKS: Record<
  * mock = run everything in the browser (used for the shareable single-file demo).
  */
 export const API_MODE: "mock" | "live" = process.env.NEXT_PUBLIC_API_MODE === "mock" ? "mock" : "live";
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/v1";
 /** Key the lender dashboard sends to the API. The backend seeds this demo key for City Bank. */
-export const LENDER_API_KEY = process.env.NEXT_PUBLIC_LENDER_API_KEY ?? "tl_demo_citybank_key";
+export const LENDER_API_KEY = process.env.NEXT_PUBLIC_LENDER_API_KEY || "tl_demo_citybank_key";
 
 /** Simulated latency range for the mock adapter, in ms. */
 export const MOCK_LATENCY: readonly [number, number] = [300, 800];
 
 /** Where the sample export files are served from (public/samples). */
-export const SAMPLES_BASE = process.env.NEXT_PUBLIC_SAMPLES_BASE ?? "/samples/";
+export const SAMPLES_BASE = process.env.NEXT_PUBLIC_SAMPLES_BASE || "/samples/";

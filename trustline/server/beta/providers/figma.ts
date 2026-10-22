@@ -15,7 +15,7 @@ import type { NewWork, Run } from "../store";
 type Fetch = typeof fetch;
 const API = "https://api.figma.com";
 
-export const FIGMA_SCOPES = process.env.FIGMA_SCOPES ?? "current_user:read file_content:read file_versions:read file_comments:read";
+export const FIGMA_SCOPES = process.env.FIGMA_SCOPES?.trim() || "current_user:read file_content:read file_versions:read file_comments:read";
 
 export interface FigmaSecret {
   mode: "oauth" | "pat";

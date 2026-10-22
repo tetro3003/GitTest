@@ -9,8 +9,8 @@ const g = globalThis as unknown as { __trustlineRobot?: NodeJS.Timeout };
 
 export function startRobot() {
   if (g.__trustlineRobot || process.env.ROBOT_DISABLED === "1") return;
-  const everyMin = Number(process.env.ROBOT_CHECK_MINUTES ?? 10);
-  const maxAge = Number(process.env.ROBOT_MAX_AGE_HOURS ?? 24);
+  const everyMin = Number(process.env.ROBOT_CHECK_MINUTES) || 10;
+  const maxAge = Number(process.env.ROBOT_MAX_AGE_HOURS) || 24;
   let busy = false;
   const tick = async () => {
     if (busy) return;

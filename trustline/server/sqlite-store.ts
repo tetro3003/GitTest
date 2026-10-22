@@ -5,7 +5,7 @@ import type { AuditEntry, BorrowerState, Store } from "@/lib/service/store";
 import type { EvidenceFeed, Share, WorkEvent } from "@/lib/types";
 
 /** The demo lender key, so the dashboard and the API docs work out of the box. */
-export const DEMO_LENDER_KEY = process.env.TRUSTLINE_DEMO_LENDER_KEY ?? "tl_demo_citybank_key";
+export const DEMO_LENDER_KEY = process.env.TRUSTLINE_DEMO_LENDER_KEY || "tl_demo_citybank_key";
 
 export const hashKey = (k: string) => createHash("sha256").update(k).digest("hex");
 

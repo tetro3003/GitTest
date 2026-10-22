@@ -302,6 +302,17 @@ describe("beta sources end to end", () => {
     expect(service.identity(me)!.status).toBe("failed");
   });
 
+  it("uses the browser's address when PUBLIC_URL is present but empty (copied .env.example)", async () => {
+    process.env.PUBLIC_URL = "";
+    try {
+      const { call } = await setup();
+      const r = await call<{ url: string }>("POST", "oauth/google/start", {});
+      expect(new URL(r.body.url).searchParams.get("redirect_uri")).toBe("http://localhost:3000/api/beta/oauth/google/callback");
+    } finally {
+      delete process.env.PUBLIC_URL;
+    }
+  });
+
   it("explains when a provider app isn't configured", async () => {
     const { call } = await setup();
     delete process.env.CANVA_CLIENT_ID;
