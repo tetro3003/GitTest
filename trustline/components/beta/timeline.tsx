@@ -26,6 +26,16 @@ const LEVEL_DOT: Record<TimelineEntry["level"], string> = {
   error: "!bg-rose-500 ring-2 ring-rose-500/40",
 };
 
+/** When nothing is being read: say everything is saved and when the daily robot looks again. */
+function idleLabel(connections: BetaConnection[]): string {
+  const synced = connections.map((c) => c.lastSyncAt).filter((x): x is string => !!x);
+  if (!connections.length) return "WAITING";
+  if (!synced.length) return "UP TO DATE";
+  const next = Math.min(...synced.map((t) => new Date(t).getTime() + 24 * 3600_000)) - Date.now();
+  const h = Math.max(0, Math.round(next / 3600_000));
+  return `UP TO DATE · NEXT CHECK ${h < 1 ? "SOON" : `IN ${h} H`}`;
+}
+
 const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 const day = (iso: string) => new Date(iso).toLocaleDateString([], { day: "numeric", month: "short" });
 
@@ -49,8 +59,8 @@ export function Timeline({ entries, connections, showTech, live }: { entries: Ti
         </div>
         <span className="font-mono text-[11px] night-muted">trustline · activity</span>
         <span className="flex items-center gap-2 font-mono text-[11px] font-semibold text-emerald-300">
-          {live ? <span className="live-dot" /> : <span className="size-2 rounded-full bg-white/30" />}
-          {live ? "LIVE" : "IDLE"}
+          {live ? <span className="live-dot" /> : <span className="size-2 rounded-full bg-emerald-300/60" />}
+          {live ? "READING NOW" : idleLabel(connections)}
         </span>
       </div>
 
