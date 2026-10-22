@@ -43,8 +43,12 @@ export default function BetaHome() {
       setScore(s.score);
       setPayments(p);
       if (t.length) {
-        lastId.current = t[t.length - 1].id;
-        setTimeline((old) => [...old, ...t].slice(-400));
+        lastId.current = Math.max(lastId.current, t[t.length - 1].id);
+        // Two refreshes can overlap (dev mode runs effects twice, buttons refresh too): never add a line twice.
+        setTimeline((old) => {
+          const seen = new Set(old.map((e) => e.id));
+          return [...old, ...t.filter((e) => !seen.has(e.id))].slice(-400);
+        });
       }
     } catch (e) {
       if (e instanceof BetaApiError && e.status === 401) setMe(null);
