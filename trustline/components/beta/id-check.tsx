@@ -24,7 +24,7 @@ export function IdCheckCard({ identity, onChange }: { identity: IdentityCheck | 
         <div className="min-w-0 flex-1">
           <p className="font-semibold">ID check</p>
           <p className="text-sm text-muted-foreground">
-            {ok ? `Verified: ${identity!.name} · ID …${identity!.documentNumberLast4} · valid until ${identity!.expiry}` : "Photograph your ID card and take a live selfie. Photos never leave your device."}
+            {ok ? `Verified: ${identity!.name} · document …${identity!.documentNumberLast4} · valid until ${identity!.expiry}` : "Photograph your ID card or passport and take a live selfie. Photos never leave your device."}
           </p>
         </div>
         <Button size="sm" className="rounded-xl" variant={ok ? "outline" : "default"} onClick={() => setOpen(true)}>
@@ -48,6 +48,7 @@ export function IdCheckCard({ identity, onChange }: { identity: IdentityCheck | 
 
 function IdCheckDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [step, setStep] = useState<Step>("intro");
+  const [doc, setDoc] = useState<"id" | "passport">("id");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mrz, setMrz] = useState("");
@@ -87,12 +88,20 @@ function IdCheckDialog({ onClose, onDone }: { onClose: () => void; onDone: () =>
   };
 
   const captureBack = async () => {
-    setBusy("Reading the code on your ID… 0%");
+    setBusy("Reading the code on your document… 0%");
     setError(null);
     try {
-      const text = await ocrMrz(snapshot(video.current!), (p) => setBusy(`Reading the code on your ID… ${Math.round(p * 100)}%`));
+      const shot = snapshot(video.current!);
+      const text = await ocrMrz(shot, (p) => setBusy(`Reading the code on your document… ${Math.round(p * 100)}%`));
       setMrz(text);
-      if (!text) setError("Couldn't find the code lines. Fill the frame with the back of the card, avoid glare, and try again. You can also type them.");
+      if (!text) setError(`Couldn't find the code lines. Fill the frame with the ${doc === "passport" ? "passport photo page" : "back of the card"}, avoid glare, and try again. You can also type them.`);
+      if (doc === "passport") {
+        // A passport's photo page holds both the code and the photo: one picture does both.
+        setBusy("Finding the face on your passport…");
+        const f = await readFace(shot);
+        setIdFace(f?.embedding ?? null);
+        if (!f?.embedding) setError("No clear face found on the photo page. Hold it closer, avoid glare, and retake.");
+      }
     } catch (e) {
       setError(`Reading failed: ${(e as Error).message}`);
     } finally {
@@ -160,7 +169,8 @@ function IdCheckDialog({ onClose, onDone }: { onClose: () => void; onDone: () =>
   const parsed = mrz ? parseMrz(mrz) : null;
   const allOk = parsed?.checks.every((c) => c.ok);
   const showVideo = step === "back" || step === "front" || (step === "selfie" && !(live.blink && live.turn && live.selfie));
-  const STEPS: Step[] = ["back", "front", "selfie", "result"];
+  const STEPS: Step[] = doc === "passport" ? ["back", "selfie", "result"] : ["back", "front", "selfie", "result"];
+  const LABELS = doc === "passport" ? ["Photo page", "Live selfie", "Result"] : ["Back of ID", "Front", "Live selfie", "Result"];
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && (stop(), onClose())}>
@@ -168,20 +178,40 @@ function IdCheckDialog({ onClose, onDone }: { onClose: () => void; onDone: () =>
         <DialogTitle>Check your ID</DialogTitle>
         <DialogDescription>Runs on your device. Photos are never uploaded or stored; only the results are sent.</DialogDescription>
 
-        <ol className="mt-4 grid grid-cols-4 gap-1" aria-label="Progress">
-          {["Back of ID", "Front", "Live selfie", "Result"].map((l, i) => (
+        <ol className={cn("mt-4 grid gap-1", doc === "passport" ? "grid-cols-3" : "grid-cols-4")} aria-label="Progress">
+          {LABELS.map((l, i) => (
             <li key={l} className={cn("rounded-full py-1 text-center text-[11px] font-semibold", STEPS.indexOf(step) >= i ? "bg-brand text-brand-foreground" : "bg-muted text-muted-foreground")}>{l}</li>
           ))}
         </ol>
 
         {step === "intro" && (
           <div className="mt-5 space-y-3 text-sm">
-            <p>You&apos;ll need your Georgian ID card (or passport) and good light. Three quick steps:</p>
+            <fieldset>
+              <legend className="mb-2 font-medium">Which document?</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {([["id", "ID card", "Georgian or any ICAO ID card"], ["passport", "Passport", "Any country"]] as const).map(([v, t, sub]) => (
+                  <label key={v} className={cn("cursor-pointer rounded-2xl border p-3", doc === v ? "border-brand bg-brand-soft/60" : "hover:bg-muted/60")}>
+                    <input type="radio" name="doc" className="sr-only" checked={doc === v} onChange={() => setDoc(v)} />
+                    <span className="block font-semibold">{t}</span>
+                    <span className="block text-xs text-muted-foreground">{sub}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-              <li>Photograph the <strong>back</strong>: we read the code lines (with <code>&lt;&lt;&lt;</code>) and check their built-in check digits.</li>
-              <li>Photograph the <strong>front</strong>: we find the face on the card.</li>
-              <li>Take a <strong>live selfie</strong>: blink, then turn your head. We compare your face with the card.</li>
+              {doc === "id" ? (
+                <>
+                  <li>Photograph the <strong>back</strong>: we read the code lines (with <code>&lt;&lt;&lt;</code>) and check their built-in check digits.</li>
+                  <li>Photograph the <strong>front</strong>: we find the face on the card.</li>
+                </>
+              ) : (
+                <li>Photograph the <strong>photo page</strong>: we read the two code lines at the bottom (with <code>&lt;&lt;&lt;</code>), check their digits, and find your photo.</li>
+              )}
+              <li>Take a <strong>live selfie</strong>: blink, then turn your head. We compare your face with the document.</li>
             </ol>
+            <p className="rounded-xl bg-muted/60 p-2.5 text-xs text-muted-foreground">
+              <strong>Why not a driver&apos;s licence?</strong> Licences don&apos;t carry the machine-readable code with check digits, so an edited number couldn&apos;t be caught. Georgian banks also ask for an ID card or passport for identity checks.
+            </p>
             <p className="text-xs text-muted-foreground">First use downloads the reading and face models (~15 MB).</p>
             <Button className="w-full rounded-xl" onClick={() => go("back")}><Camera /> Start</Button>
           </div>
@@ -200,17 +230,21 @@ function IdCheckDialog({ onClose, onDone }: { onClose: () => void; onDone: () =>
         {step === "back" && (
           <div className="mt-3 space-y-2">
             <div className="flex gap-2">
-              <Button className="flex-1 rounded-xl" onClick={captureBack} disabled={!!busy}>{busy ? <Loader2 className="animate-spin" /> : <Camera />} Capture back of ID</Button>
+              <Button className="flex-1 rounded-xl" onClick={captureBack} disabled={!!busy}>{busy ? <Loader2 className="animate-spin" /> : <Camera />} {doc === "passport" ? "Capture photo page" : "Capture back of ID"}</Button>
             </div>
             <label className="block text-xs font-medium" htmlFor="mrz">Code lines (fix any misread character)</label>
-            <textarea id="mrz" value={mrz} onChange={(e) => setMrz(e.target.value.toUpperCase())} rows={3} spellCheck={false} className="w-full rounded-xl border border-input bg-background/60 px-3 py-2 font-mono text-xs tracking-wider" placeholder="IDGEO…" />
+            <textarea id="mrz" value={mrz} onChange={(e) => setMrz(e.target.value.toUpperCase())} rows={doc === "passport" ? 2 : 3} spellCheck={false} className="w-full rounded-xl border border-input bg-background/60 px-3 py-2 font-mono text-xs tracking-wider" placeholder={doc === "passport" ? "P<GEO…" : "IDGEO…"} />
             {parsed && (
               <p className={cn("text-xs", allOk ? "text-positive" : "text-risk")}>
                 {allOk ? `✓ ${parsed.givenNames} ${parsed.surname} · all check digits correct` : `Check digits wrong: ${parsed.checks.filter((c) => !c.ok).map((c) => c.field).join(", ")}. Retake or fix the characters.`}
               </p>
             )}
             {mrz && !parsed && <p className="text-xs text-risk">Needs 3 lines of 30 characters (ID card) or 2 of 44 (passport).</p>}
-            <Button className="w-full rounded-xl" variant="outline" disabled={!allOk} onClick={() => go("front")}>Next: front of ID</Button>
+            {doc === "passport" ? (
+              <Button className="w-full rounded-xl" variant="outline" disabled={!allOk || !idFace || !!busy} onClick={() => go("selfie")}>Next: live selfie</Button>
+            ) : (
+              <Button className="w-full rounded-xl" variant="outline" disabled={!allOk || !!busy} onClick={() => go("front")}>Next: front of ID</Button>
+            )}
           </div>
         )}
 

@@ -97,7 +97,7 @@ export function ScoreHero({ score, hasWork, hasIncome, hasId }: { score: BetaSco
                 {[
                   { done: hasWork, title: "Connect a work tool: Figma, Canva, Webflow or Miro", sub: "Proves the work is real" },
                   { done: hasIncome, title: "Connect where clients pay you: Gmail, Wise, bank or a wallet", sub: "Proves the money is real" },
-                  { done: hasId, title: "Check your ID", sub: "Proves the income is yours (adds points; not required to see a score)" },
+                  { done: hasId, title: "Confirm who you are: with your bank, or the ID check", sub: "Proves the income is yours (adds points; not required to see a score)" },
                 ].map((s, i) => (
                   <li key={s.title} className="flex items-center gap-3">
                     <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold", s.done ? "border-emerald-400 bg-emerald-400 text-[#06281f]" : "border-white/25")}>{s.done ? <Check className="size-4" /> : i + 1}</span>

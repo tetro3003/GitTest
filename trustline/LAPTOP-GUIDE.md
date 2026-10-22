@@ -129,7 +129,8 @@ Open **http://localhost:3000/beta** and create an account. Nothing here is demo 
 | **Wise** | Wise → **Settings → Developer tools → API tokens → Add new token → Read only**. Paste it into the Wise card. |
 | **Webflow** | *Use a site token*: Site settings → **Apps & integrations → API access → Generate API token** (read-only Sites + Pages). |
 | **TBC Bank (test mode)** | **Upload test transactions**: a CSV with `date, amount, currency, counterparty` columns, or the bank's open-banking JSON. Example: `trustline/public/samples/tbc-test-transactions.csv`. |
-| **ID check** | **Start** → photograph the back of your ID (the lines with `<<<`), then the front, then a live selfie (blink, turn your head). Needs a camera; photos never leave your laptop. First use downloads ~15 MB of models. |
+| **Confirm with your bank** | TBC or Bank of Georgia confirms the account holder's name through open banking (no balances, no transactions). Needs the bank's sandbox details in `.env.local` (`TBC_OB_BASE_URL` etc., see `.env.example`), e.g. the hackathon's TBC mock API. |
+| **ID check** | **Start** → choose **ID card** or **Passport** → photograph the code lines (`<<<`), the photo, then take a live selfie (blink, turn your head). Needs a camera; photos never leave your laptop. First use downloads ~15 MB of models. |
 
 ### "Connect" buttons (one free developer app per company)
 Copy `.env.example` to `.env.local`, fill in the keys you create, and restart `npm run dev`.

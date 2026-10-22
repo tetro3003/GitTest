@@ -1,9 +1,12 @@
 import { randomInt } from "node:crypto";
 import { reconcilePayments } from "@/lib/beta/reconcile";
 import { computeBetaScore } from "@/lib/beta/score";
+import { BANK_NAMES, type BankId, type BankIdentity } from "@/lib/beta/types";
+import { samePerson } from "@/lib/beta/names";
 import type { BetaScore, BetaUser, ChainFamily, IdentityCheck, OAuthProvider, PaymentFact, ProviderId, TimelineActor, WalletChallenge } from "@/lib/beta/types";
 import { checkPassword, hashPassword, newId, newToken } from "./auth";
 import { exchangeFigmaCode, figmaAuthorizeUrl, figmaOAuthConfigured, figmaWhoAmI, ProviderError, readFigmaWork, refreshFigmaIfNeeded, type FigmaSecret } from "./providers/figma";
+import { bankIdentityConfigured, finishBankIdentity, startBankIdentity } from "./providers/bank-identity";
 import { parseBankFile } from "./providers/bank-import";
 import { aiAvailable } from "./providers/email-extract";
 import { readGmailPayments } from "./providers/gmail";
@@ -68,11 +71,18 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
   function holderNames(userId: string): { source: string; name: string }[] {
     return store
       .connections(userId)
-      .filter((c) => (c.provider === "wise" || c.provider === "bank") && typeof c.settings.holderName === "string" && c.settings.holderName)
-      .map((c) => ({ source: c.provider === "wise" ? "Wise" : "TBC Bank", name: String(c.settings.holderName) }));
+      .filter((c) => (c.provider === "wise" || c.provider === "bank" || c.provider === "bank_id") && typeof c.settings.holderName === "string" && c.settings.holderName)
+      .map((c) => ({ source: c.provider === "wise" ? "Wise" : c.provider === "bank_id" ? BANK_NAMES[c.settings.bank as BankId] : "TBC Bank (test data)", name: String(c.settings.holderName) }));
   }
 
-  const scoreInput = (userId: string) => ({ payments: payments(userId), work: store.work(userId), asOf: now().toISOString(), identity: store.identity(userId), holderNames: holderNames(userId) });
+  function bankIdentities(userId: string): BankIdentity[] {
+    return store
+      .connections(userId)
+      .filter((c) => c.provider === "bank_id")
+      .map((c) => ({ bank: c.settings.bank as BankId, holderName: String(c.settings.holderName), accounts: (c.settings.accounts as string[]) ?? [], matchesAccount: c.settings.matchesAccount === true, confirmedAt: String(c.settings.confirmedAt) }));
+  }
+
+  const scoreInput = (userId: string) => ({ payments: payments(userId), work: store.work(userId), asOf: now().toISOString(), identity: store.identity(userId), holderNames: holderNames(userId), bankIdentities: bankIdentities(userId) });
 
   function rescore(userId: string, run: Run): BetaScore {
     const input = scoreInput(userId);
@@ -192,6 +202,11 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     return true;
   }
 
+  async function syncBankId(c: StoredConnection, run: Run) {
+    run.step("bank", `${BANK_NAMES[c.settings.bank as BankId]} confirmed your identity on ${String(c.settings.confirmedAt).slice(0, 10)}. Confirm again any time; nothing else is read.`);
+    return true;
+  }
+
   async function syncBank(_c: StoredConnection, run: Run) {
     run.step("bank", "TBC Bank is in test mode: transactions come from the uploaded test file. Upload a new file to change them.");
     return true;
@@ -209,6 +224,8 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
         return syncWise(c, run);
       case "bank":
         return syncBank(c, run);
+      case "bank_id":
+        return syncBankId(c, run);
       default:
         return syncWorkTool(c, c.provider, run);
     }
@@ -408,6 +425,41 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     return c!.id;
   }
 
+  /* ---------- identity through open banking (TBC, Bank of Georgia) ---------- */
+
+  async function bankIdentityStart(userId: string, bank: BankId, callbackBase: string): Promise<{ url: string }> {
+    if (!BANK_NAMES[bank]) throw new ProviderError("Unknown bank", 404);
+    const state = newToken(18);
+    const callback = `${callbackBase}/api/beta/bank-id/${bank}/callback?state=${state}`;
+    const run = startRun(store, userId, null);
+    run.step("you", `Clicked “Confirm with ${BANK_NAMES[bank]}”`);
+    const { consentId, redirect } = await startBankIdentity(bank, callback, run, f);
+    store.saveOAuthState(state, userId, `bankid:${bank}`, consentId);
+    return { url: redirect ?? callback };
+  }
+
+  async function bankIdentityCallback(bank: BankId, state: string): Promise<{ ok: boolean; error: string | null }> {
+    const st = store.takeOAuthState(state);
+    if (!st || st.provider !== `bankid:${bank}` || !st.verifier) return { ok: false, error: "This bank confirmation expired. Please try again." };
+    const run = startRun(store, st.userId, null);
+    try {
+      const r = await finishBankIdentity(bank, st.verifier, run, f);
+      const user = store.user(st.userId)!;
+      const matches = samePerson(r.holderName, user.name);
+      (matches ? run.ok : run.warn)("trustline", matches ? `Name matches your account (${user.name})` : `The bank's name “${r.holderName}” doesn't match your account name “${user.name}”`);
+      const id = store.identity(st.userId);
+      if (id?.status === "verified") (samePerson(r.holderName, id.name) ? run.ok : run.warn)("trustline", samePerson(r.holderName, id.name) ? "…and matches your ID check" : `…but your ID check says “${id.name}”`);
+      for (const old of store.connections(st.userId).filter((c) => c.provider === "bank_id" && c.settings.bank === bank)) store.deleteConnection(old.id);
+      store.createConnection({ userId: st.userId, provider: "bank_id", label: `${BANK_NAMES[bank]} · identity`, status: "ok", secret: null, settings: { bank, holderName: r.holderName, accounts: r.accounts, matchesAccount: matches, confirmedAt: now().toISOString() } });
+      run.ok("trustline", "Saved: the bank's name for you and the last 4 digits of your accounts. The permission was one-time and nothing else is read.");
+      rescore(st.userId, run);
+      return { ok: matches, error: matches ? null : `${BANK_NAMES[bank]} says the account belongs to “${r.holderName}”, not “${user.name}”.` };
+    } catch (e) {
+      run.error("trustline", `Bank confirmation failed: ${(e as Error).message}`);
+      return { ok: false, error: (e as Error).message };
+    }
+  }
+
   /* ---------- ID check ---------- */
 
   function verifyIdentity(userId: string, input: IdSubmission): IdentityCheck {
@@ -466,7 +518,12 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
       miro: oauthConfigured("miro"),
       dribbble: oauthConfigured("dribbble"),
       ai: aiAvailable(),
+      tbcId: bankIdentityConfigured("tbc"),
+      bogId: bankIdentityConfigured("bog"),
     }),
+    bankIdentityStart,
+    bankIdentityCallback,
+    bankIdentities,
     oauthStart,
     oauthCallback,
     connectToken,

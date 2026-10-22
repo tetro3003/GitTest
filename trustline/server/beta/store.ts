@@ -113,7 +113,7 @@ export function createBetaStore(db: Database.Database) {
     },
     /** Connections the daily robot should refresh: ready and not synced since `cutoff`. */
     connectionsDue(cutoff: string): StoredConnection[] {
-      const rows = db.prepare("SELECT * FROM beta_connections WHERE status IN ('ok', 'error') AND provider != 'bank' AND (last_sync_at IS NULL OR last_sync_at < ?)").all(cutoff) as ConnectionRow[];
+      const rows = db.prepare("SELECT * FROM beta_connections WHERE status IN ('ok', 'error') AND provider NOT IN ('bank', 'bank_id') AND (last_sync_at IS NULL OR last_sync_at < ?)").all(cutoff) as ConnectionRow[];
       return rows.map(toConn);
     },
 

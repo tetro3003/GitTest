@@ -82,6 +82,13 @@ export function createBetaHttp(service: BetaService) {
         return new Response(null, { status: 302, headers: { Location: `${publicOrigin(req)}${to}` } });
       }
 
+      const bankCb = route.match(/^bank-id\/(tbc|bog)\/callback$/);
+      if (method === "GET" && bankCb) {
+        const r = await service.bankIdentityCallback(bankCb[1] as "tbc" | "bog", new URL(req.url).searchParams.get("state") ?? "");
+        const to = r.ok ? "/beta?bankid=ok" : `/beta?error=${encodeURIComponent(r.error ?? "Bank confirmation failed")}`;
+        return new Response(null, { status: 302, headers: { Location: `${publicOrigin(req)}${to}` } });
+      }
+
       /* ----- logged in ----- */
       const token = cookieFrom(req);
       const user: BetaUser | null = token ? service.userForSession(token) : null;
@@ -92,7 +99,9 @@ export function createBetaHttp(service: BetaService) {
         return json({ ok: true }, 200, { "Set-Cookie": sessionCookie("", req, true) });
       }
       if (method === "GET" && route === "me") return json({ user, figmaOAuth: service.figmaOAuthConfigured(), setup: service.setup() });
-      if (method === "GET" && route === "identity") return json({ identity: service.identity(user.id) });
+      if (method === "GET" && route === "identity") return json({ identity: service.identity(user.id), banks: service.bankIdentities(user.id) });
+      const bankStart = route.match(/^bank-id\/(tbc|bog)\/start$/);
+      if (method === "POST" && bankStart) return json(await service.bankIdentityStart(user.id, bankStart[1] as "tbc" | "bog", publicOrigin(req)));
       if (method === "POST" && route === "identity") {
         const b = await body(req);
         const live = (b.liveness ?? {}) as Record<string, unknown>;

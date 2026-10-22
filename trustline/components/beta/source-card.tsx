@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowRight, KeyRound, Loader2, Upload } from "lucide-react";
+import { ArrowRight, KeyRound, Loader2, Settings2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { betaApi, type SetupState } from "@/lib/beta/client";
@@ -9,6 +9,7 @@ import type { BetaConnection, OAuthProvider } from "@/lib/beta/types";
 import { cn } from "@/lib/utils";
 import { SourceMark } from "./brand-icons";
 import { ConnectionActions, lastSync, StatusBadge } from "./connection-bits";
+import { SetupGuide } from "./setup-guide";
 
 export interface SourceSpec {
   provider: "gmail" | "wise" | "bank" | "canva" | "webflow" | "miro" | "dribbble";
@@ -28,6 +29,7 @@ export interface SourceSpec {
 export function SourceCard({ spec, connections, setup, onChange, onError }: { spec: SourceSpec; connections: BetaConnection[]; setup: SetupState | null; onChange: () => void; onError: (m: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const configured = spec.oauth ? !!setup?.[spec.oauth] : false;
 
@@ -96,9 +98,14 @@ export function SourceCard({ spec, connections, setup, onChange, onError }: { sp
 
       {(connections.length === 0 || canAddMore) && (
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
-          {spec.oauth && (
-            <Button size="sm" className="rounded-xl" onClick={signIn} disabled={busy || !configured} title={configured ? undefined : "Needs a developer app (see guide)"}>
+          {spec.oauth && configured && (
+            <Button size="sm" className="rounded-xl" onClick={signIn} disabled={busy}>
               {busy ? <Loader2 className="animate-spin" /> : <ArrowRight />} {connections.length ? "Add another" : `Connect ${spec.name}`}
+            </Button>
+          )}
+          {spec.oauth && !configured && (
+            <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setShowSetup((x) => !x)} aria-expanded={showSetup}>
+              <Settings2 /> {showSetup ? "Hide setup steps" : `How to turn on ${spec.name}`}
             </Button>
           )}
           {spec.token && (
@@ -116,11 +123,8 @@ export function SourceCard({ spec, connections, setup, onChange, onError }: { sp
           )}
         </div>
       )}
-      {spec.oauth && !configured && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          “Connect” needs a {spec.name} developer app on this server. Steps in <code className="font-mono">LAPTOP-GUIDE.md</code> (section 5).
-        </p>
-      )}
+      {spec.oauth && !configured && !showSetup && <p className="mt-2 text-xs text-muted-foreground">Needs a free {spec.name} developer app first (one-time, ~5 minutes).</p>}
+      {spec.oauth && !configured && showSetup && <SetupGuide provider={spec.oauth} name={spec.name} />}
       {spec.upload && <div className="mt-2 text-xs text-muted-foreground">{spec.upload.help}</div>}
 
       {showToken && spec.token && (

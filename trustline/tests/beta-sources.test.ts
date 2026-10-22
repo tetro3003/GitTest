@@ -131,6 +131,24 @@ describe("ID check", () => {
     expect(parseMrz(good.replace("950314", "950315"))!.checks.some((c) => !c.ok)).toBe(true);
   });
 
+  it("accepts a passport (2 lines of 44) with all its check digits", () => {
+    const doc = "13AB45678";
+    const dob = "950314";
+    const exp = "320520";
+    const pn = "01001012345<<<";
+    const l1 = "P<GEOBERIDZE<<NINO".padEnd(44, "<");
+    const pnCheck = mrzCheckDigit(pn);
+    const head = `${doc}${mrzCheckDigit(doc)}GEO${dob}${mrzCheckDigit(dob)}F${exp}${mrzCheckDigit(exp)}${pn}${pnCheck}`;
+    const comp = head.slice(0, 10) + head.slice(13, 20) + head.slice(21, 43);
+    const l2 = head + mrzCheckDigit(comp);
+    const m = parseMrz(`${l1}\n${l2}`)!;
+    expect(m.format).toBe("TD3");
+    expect(m.checks.every((c) => c.ok)).toBe(true);
+    const r = evaluateId({ mrz: `${l1}\n${l2}`, liveness: { blink: true, turn: true }, faceSimilarity: 0.7 }, { accountName: "Nino Beridze", holderNames: [], now: NOW });
+    expect(r.status).toBe("verified");
+    expect(r.checks[0].detail).toContain("Passport");
+  });
+
   it("verifies only when every check passes", () => {
     const ctx = { accountName: "Nino Beridze", holderNames: [], now: NOW };
     expect(evaluateId({ mrz: good, liveness: { blink: true, turn: true }, faceSimilarity: 0.8 }, ctx).status).toBe("verified");
@@ -279,7 +297,7 @@ describe("beta sources end to end", () => {
     await call("POST", "bank/import", { filename: "tbc.json", content: JSON.stringify({ account: { ownerName: "Giorgi Maisuradze" }, transactions: { booked: [{ transactionId: "t1", bookingDate: "2026-09-03", transactionAmount: { amount: "3000", currency: "GEL" }, debtorName: "Kavea LLC" }] } }) });
     const mrz = td1({ doc: "12ID34567", dob: "950314", exp: "310101", pn: "01001012345", sur: "BERIDZE", given: "NINO" });
     const r = await call<{ identity: { status: string; checks: { id: string; ok: boolean }[] } }>("POST", "identity", { mrz, liveness: { blink: true, turn: true }, faceSimilarity: 0.81 });
-    expect(r.body.identity.checks.find((c) => c.id === "holder_TBC Bank")!.ok).toBe(false);
+    expect(r.body.identity.checks.find((c) => c.id === "holder_TBC Bank (test data)")!.ok).toBe(false);
     expect(r.body.identity.status).toBe("failed");
     expect(service.identity(me)!.status).toBe("failed");
   });

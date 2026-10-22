@@ -1,9 +1,22 @@
 /** Shared types for the designer beta (server + browser). */
 
-export type ProviderId = "figma" | "wallet" | "gmail" | "wise" | "bank" | "canva" | "webflow" | "miro" | "dribbble";
+export type ProviderId = "figma" | "wallet" | "gmail" | "wise" | "bank" | "bank_id" | "canva" | "webflow" | "miro" | "dribbble";
 export type OAuthProvider = "google" | "canva" | "webflow" | "miro" | "dribbble";
 export type WorkSource = "figma" | "canva" | "webflow" | "miro" | "dribbble";
 export type PaymentSource = "wallet" | "email" | "wise" | "bank";
+/** Georgian banks that can confirm a person's identity through open banking. */
+export type BankId = "tbc" | "bog";
+export const BANK_NAMES: Record<BankId, string> = { tbc: "TBC Bank", bog: "Bank of Georgia" };
+
+/** What a bank confirmed about its customer: the name it verified when the account was opened. */
+export interface BankIdentity {
+  bank: BankId;
+  holderName: string;
+  /** Last 4 characters of each account's IBAN, so the person can recognise them. */
+  accounts: string[];
+  matchesAccount: boolean;
+  confirmedAt: string;
+}
 export type ConnectionStatus = "needs_setup" | "syncing" | "ok" | "error";
 
 export type ChainFamily = "evm" | "solana" | "tron";

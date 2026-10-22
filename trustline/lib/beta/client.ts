@@ -1,8 +1,8 @@
 "use client";
 
-import type { BetaConnection, BetaScore, BetaUser, ChainFamily, IdentityCheck, OAuthProvider, PaymentFact, TimelineEntry, WalletChallenge } from "./types";
+import type { BankIdentity, BetaConnection, BetaScore, BetaUser, ChainFamily, IdentityCheck, OAuthProvider, PaymentFact, TimelineEntry, WalletChallenge } from "./types";
 
-export type SetupState = Record<"figma" | OAuthProvider | "ai", boolean>;
+export type SetupState = Record<"figma" | OAuthProvider | "ai" | "tbcId" | "bogId", boolean>;
 
 /** Browser client for /api/beta. The session lives in an HttpOnly cookie. */
 export class BetaApiError extends Error {
@@ -28,7 +28,8 @@ export const betaApi = {
   oauthStart: (p: OAuthProvider) => call<{ url: string }>("POST", `oauth/${p}/start`, {}),
   pasteToken: (p: "wise" | "webflow", token: string) => call<{ connectionId: string }>("POST", `${p}/token`, { token }),
   bankImport: (filename: string, content: string) => call<{ connectionId: string }>("POST", "bank/import", { filename, content }),
-  identity: () => call<{ identity: IdentityCheck | null }>("GET", "identity"),
+  identity: () => call<{ identity: IdentityCheck | null; banks: BankIdentity[] }>("GET", "identity"),
+  bankIdentityStart: (bank: "tbc" | "bog") => call<{ url: string }>("POST", `bank-id/${bank}/start`, {}),
   verifyIdentity: (b: { mrz: string; liveness: { blink: boolean; turn: boolean; realScore?: number }; faceSimilarity: number }) => call<{ identity: IdentityCheck }>("POST", "identity", b),
   signup: (b: { email: string; name: string; password: string }) => call<{ user: BetaUser }>("POST", "signup", b),
   login: (b: { email: string; password: string }) => call<{ user: BetaUser }>("POST", "login", b),

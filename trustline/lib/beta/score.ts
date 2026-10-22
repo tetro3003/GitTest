@@ -2,7 +2,8 @@ import { bandFor } from "../scoring";
 import { clamp, mean, median, round, scale, stdDev, sum } from "../scoring/math";
 import { samePerson } from "./names";
 import { matchClients } from "./reconcile";
-import type { BetaFlag, BetaMonth, BetaReason, BetaScore, IdentityCheck, PaymentFact, WorkFact } from "./types";
+import type { BankIdentity, BetaFlag, BetaMonth, BetaReason, BetaScore, IdentityCheck, PaymentFact, WorkFact } from "./types";
+import { BANK_NAMES } from "./types";
 
 /**
  * Designer-beta scorer. Uses only facts read from the source (wallet payments
@@ -64,6 +65,8 @@ export interface BetaScoreInput {
   identity?: IdentityCheck | null;
   /** Account-holder names seen at money sources (Wise, bank), for the name check. */
   holderNames?: { source: string; name: string }[];
+  /** Identity confirmed by a bank through open banking. */
+  bankIdentities?: BankIdentity[];
 }
 
 export function computeBetaScore(input: BetaScoreInput): BetaScore {
@@ -95,6 +98,7 @@ export function computeBetaScore(input: BetaScoreInput): BetaScore {
   const matchRatio = incomeMonths.length ? matched / incomeMonths.length : 0;
 
   const idOk = input.identity?.status === "verified";
+  const bankOk = (input.bankIdentities ?? []).filter((b) => b.matchesAccount);
   const clients = matchClients(income, input.work);
   const features = {
     verifiedMonthlyIncome,
@@ -109,12 +113,13 @@ export function computeBetaScore(input: BetaScoreInput): BetaScore {
     clientsMatched: clients.length,
     workTools: new Set(input.work.map((w) => w.source)).size,
     idVerified: idOk ? 1 : 0,
+    bankConfirmedIdentity: bankOk.length ? 1 : 0,
   };
 
   const missing: string[] = [];
   if (!income.length) missing.push("Connect Gmail, Wise, your bank or a wallet that has received client payments.");
   if (!hasWork) missing.push("Connect Figma, Canva, Webflow or Miro so we can see the design work behind the income.");
-  if (!idOk) missing.push("Verify your ID so the bank knows the income is yours.");
+  if (!idOk && !bankOk.length) missing.push("Confirm who you are: with your bank (TBC / Bank of Georgia) or the ID check.");
   const generatedAt = new Date(asOf).toISOString();
   if (!income.length) {
     return { ready: false, missing, score: null, band: null, verifiedMonthlyIncome: 0, maxMonthlyPayment: 0, reasons: [], flags: [], months, features, generatedAt };
@@ -140,7 +145,8 @@ export function computeBetaScore(input: BetaScoreInput): BetaScore {
   }
 
   if (clients.length) add("client_match", "Clients seen in work and payments", scale(clients.length, 1, 3, 10, 30), `${clients.map((c) => `${c.payer} (${c.evidence})`).slice(0, 3).join(", ")} appear both in your work and in who paid you.`);
-  if (idOk) add("identity", "ID verified", 20, `Your ID was checked: ${input.identity!.name}.`);
+  if (bankOk.length) add("bank_identity", "Identity confirmed by your bank", 20, `${bankOk.map((b) => BANK_NAMES[b.bank]).join(" and ")} confirmed the account holder is ${bankOk[0].holderName}.`);
+  if (idOk) add("identity", "ID verified", bankOk.length ? 10 : 20, `Your ID was checked: ${input.identity!.name}.`);
 
   const flags: BetaFlag[] = [];
   if (idOk)

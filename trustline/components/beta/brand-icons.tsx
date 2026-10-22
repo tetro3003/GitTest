@@ -44,6 +44,8 @@ const MARKS: Record<string, { bg: string; fg: string; text: string }> = {
   gmail: { bg: "linear-gradient(135deg,#ea4335,#fbbc04 55%,#34a853)", fg: "#fff", text: "M" },
   wise: { bg: "#9fe870", fg: "#163300", text: "W" },
   bank: { bg: "linear-gradient(135deg,#00a3e0,#0057a8)", fg: "#fff", text: "TBC" },
+  tbc: { bg: "linear-gradient(135deg,#00a3e0,#0057a8)", fg: "#fff", text: "TBC" },
+  bog: { bg: "linear-gradient(135deg,#ff7a00,#f04e23)", fg: "#fff", text: "BOG" },
   canva: { bg: "linear-gradient(135deg,#00c4cc,#7d2ae8)", fg: "#fff", text: "C" },
   webflow: { bg: "#146ef5", fg: "#fff", text: "W" },
   miro: { bg: "#ffd02f", fg: "#050038", text: "M" },
