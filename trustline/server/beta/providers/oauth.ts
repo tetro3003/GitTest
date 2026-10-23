@@ -20,8 +20,8 @@ interface OAuthConfig {
   scopes: string;
   /** PKCE adds a one-time secret so a stolen code is useless. */
   pkce: false | "S256" | "s256";
-  /** How our app proves itself when trading the code: HTTP Basic header or form fields. */
-  clientAuth: "basic" | "body";
+  /** How our app proves itself when trading the code: HTTP Basic header, form fields, or URL query (Miro's documented form). */
+  clientAuth: "basic" | "body" | "query";
   extra?: Record<string, string>;
   env: { id: string; secret: string };
   /** Where the developer app is created (shown in setup hints). */
@@ -66,7 +66,7 @@ export const OAUTH: Record<OAuthProvider, OAuthConfig> = {
     tokenUrl: "https://api.miro.com/v1/oauth/token",
     scopes: "boards:read",
     pkce: false,
-    clientAuth: "body",
+    clientAuth: "query",
     env: { id: "MIRO_CLIENT_ID", secret: "MIRO_CLIENT_SECRET" },
     consoleUrl: "https://miro.com/app/settings/user-profile/apps",
   },
@@ -119,7 +119,7 @@ async function tokenRequest(p: OAuthProvider, params: Record<string, string>, f:
     body.set("client_id", id);
     body.set("client_secret", secret);
   }
-  const res = await f(c.tokenUrl, { method: "POST", headers, body });
+  const res = c.clientAuth === "query" ? await f(`${c.tokenUrl}?${body}`, { method: "POST", headers: { Accept: "application/json" } }) : await f(c.tokenUrl, { method: "POST", headers, body });
   if (!res.ok) throw new ProviderError(`${c.label} refused the sign-in (${res.status}). Try connecting again.`, 502);
   const j = (await res.json()) as { access_token?: string; refresh_token?: string; expires_in?: number };
   if (!j.access_token) throw new ProviderError(`${c.label} didn't return an access key`, 502);

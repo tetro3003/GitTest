@@ -205,7 +205,12 @@ describe("beta sources end to end", () => {
       if (url === "https://api.canva.com/rest/v1/oauth/token") return ok({ access_token: "c-access", expires_in: 14400, refresh_token: "c-r" });
       if (url.endsWith("/users/me/profile")) return ok({ profile: { display_name: "Nino B" } });
       if (url.startsWith("https://api.canva.com/rest/v1/designs")) return ok({ items: [{ id: "D1", title: "Bloom social posts", created_at: 1756000000, updated_at: 1757000000 }] });
-      if (url === "https://api.miro.com/v1/oauth/token") return ok({ access_token: "mi-access" });
+      if (url.startsWith("https://api.miro.com/v1/oauth/token?")) {
+        const q = new URL(url).searchParams;
+        expect([q.get("grant_type"), q.get("code"), q.get("client_id"), q.get("client_secret")]).toEqual(["authorization_code", "abc", "test-miro_client_id", "test-miro_client_secret"]);
+        expect(q.get("redirect_uri")).toContain("/api/beta/oauth/miro/callback");
+        return ok({ access_token: "mi-access" });
+      }
       if (url === "https://api.miro.com/v1/oauth-token") return ok({ user: { id: "7", name: "Nino B" }, team: { name: "Studio" } });
       if (url.startsWith("https://api.miro.com/v2/boards?")) return ok({ data: [{ id: "B1", name: "Bloom discovery", createdAt: "2026-07-01T10:00:00Z", modifiedAt: "2026-09-01T10:00:00Z" }] });
       if (url.includes("/boards/B1/items")) return ok({ data: [{ id: "i1", createdAt: "2026-07-02T10:00:00Z", modifiedAt: "2026-07-05T10:00:00Z", createdBy: { id: "7" }, modifiedBy: { id: "7" } }] });
