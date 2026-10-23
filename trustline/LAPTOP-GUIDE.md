@@ -154,6 +154,8 @@ In every app, set the **redirect / callback URL** exactly as shown.
 - Transfers **between your own wallets**, top-ups and tiny spam transfers never count.
 - The **daily robot** re-reads every connection once a day while the app is running. **Refresh** does it now.
 
+For the demo video, follow `DEMO-SCRIPT.md` (shot by shot, with voiceover lines).
+
 ### The lender side (human decision)
 1. Sign up a second account and pick **Lender** (enter a bank name, e.g. "City Bank").
 2. As the freelancer, open **Apply for credit**, choose the bank, click **Share my report**.
