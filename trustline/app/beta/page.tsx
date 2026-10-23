@@ -64,6 +64,7 @@ export default function BetaHome() {
   }, []);
 
   const [tick, setTick] = useState(0);
+  const onError = useCallback((text: string) => setNotice({ kind: "error", text }), []);
   const changed = useCallback(() => {
     fastUntil.current = Date.now() + 20_000;
     setTick((t) => t + 1);
@@ -105,10 +106,10 @@ export default function BetaHome() {
 
   const figma = connections.find((c) => c.provider === "figma") ?? null;
   const wallets = connections.filter((c) => c.provider === "wallet");
-  const onError = (text: string) => setNotice({ kind: "error", text });
   const logout = async () => {
     await betaApi.logout();
     setMe(null);
+    setNotice(null);
     setTimeline([]);
     lastId.current = 0;
   };

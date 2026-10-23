@@ -545,9 +545,13 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     const banks = bankIdentities(applicantId);
     const generatedMs = Math.round((performance.now() - t0) * 10) / 10;
     const explanation = await writeMemo({ name: applicant.name, score: s, recommendation: rec, payments: input.payments, work: input.work, identity: input.identity ?? null, banks });
-    store.audit({ userId: applicantId, lenderId, actor: `${lender.name} (${lender.org})`, action: "Opened report", detail: `Report built in ${generatedMs} ms from ${input.payments.length} payments and ${input.work.length} work facts` });
-    store.audit({ userId: applicantId, lenderId, actor: "Trustline", action: explanation.by === "claude" ? "Explanation written by Claude" : "Rule-based explanation", detail: explanation.note });
-    startRun(store, applicantId, null).step("bank", `${lender.org} opened your report`, `Officer: ${lender.name}`);
+    // One "opened" entry per visit: reloads within 10 minutes (e.g. after recording a decision) aren't new accesses.
+    const lastOpen = store.auditTrail(applicantId, lenderId).find((e) => e.action === "Opened report");
+    if (!lastOpen || Date.now() - new Date(lastOpen.at).getTime() > 10 * 60_000) {
+      store.audit({ userId: applicantId, lenderId, actor: `${lender.name} (${lender.org})`, action: "Opened report", detail: `Report built in ${generatedMs} ms from ${input.payments.length} payments and ${input.work.length} work facts` });
+      store.audit({ userId: applicantId, lenderId, actor: "Trustline", action: explanation.by === "claude" ? "Explanation written by Claude" : "Rule-based explanation", detail: explanation.note });
+      startRun(store, applicantId, null).step("bank", `${lender.org} opened your report`, `Officer: ${lender.name}`);
+    }
     return {
       applicant: { id: applicant.id, name: applicant.name, email: applicant.email },
       sharedAt: share.createdAt,

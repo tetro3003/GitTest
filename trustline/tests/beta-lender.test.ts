@@ -68,6 +68,8 @@ describe("lender review and human decision", () => {
     const human = after.audit.filter((a) => a.action.startsWith("Human decision"));
     expect(human[0].action).toBe("Human decision: Approved up to $400/month");
     expect(human[0].detail).toMatch(/(Same as|Overrode) system suggestion/);
+    // Reloading the same report (here, after each decision) is one visit, not three.
+    expect(after.audit.filter((a) => a.action === "Opened report")).toHaveLength(1);
 
     // The freelancer sees the decision and the full audit trail.
     const mine = (await nino<{ decisions: { decision: string }[]; audit: { action: string }[] }>("GET", "shares")).body;
