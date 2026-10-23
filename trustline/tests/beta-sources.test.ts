@@ -83,9 +83,9 @@ describe("cross-source reconciliation", () => {
   it("counts a payment seen in Upwork email and in the bank once, and bank payouts from platforms once", () => {
     const out = reconcilePayments([
       p({ at: "2026-09-01T10:00:00Z", source: "email", amountUsd: 800, payer: "Bloom Ltd", chain: "Upwork" }),
-      p({ at: "2026-09-04T10:00:00Z", source: "bank", amountUsd: 790, payer: "Bloom Ltd", chain: "TBC Bank (test data)" }),
-      p({ at: "2026-09-10T10:00:00Z", source: "bank", amountUsd: 1500, payer: "UPWORK GLOBAL INC", chain: "TBC Bank (test data)" }),
-      p({ at: "2026-09-20T10:00:00Z", source: "bank", amountUsd: 400, payer: "Kavea LLC", chain: "TBC Bank (test data)" }),
+      p({ at: "2026-09-04T10:00:00Z", source: "bank", amountUsd: 790, payer: "Bloom Ltd", chain: "TBC Bank statement" }),
+      p({ at: "2026-09-10T10:00:00Z", source: "bank", amountUsd: 1500, payer: "UPWORK GLOBAL INC", chain: "TBC Bank statement" }),
+      p({ at: "2026-09-20T10:00:00Z", source: "bank", amountUsd: 400, payer: "Kavea LLC", chain: "TBC Bank statement" }),
     ]);
     expect(out.map((x) => x.status)).toEqual(["income", "duplicate", "own_transfer", "income"]);
   });
@@ -297,7 +297,7 @@ describe("beta sources end to end", () => {
     await call("POST", "bank/import", { filename: "tbc.json", content: JSON.stringify({ account: { ownerName: "Giorgi Maisuradze" }, transactions: { booked: [{ transactionId: "t1", bookingDate: "2026-09-03", transactionAmount: { amount: "3000", currency: "GEL" }, debtorName: "Kavea LLC" }] } }) });
     const mrz = td1({ doc: "12ID34567", dob: "950314", exp: "310101", pn: "01001012345", sur: "BERIDZE", given: "NINO" });
     const r = await call<{ identity: { status: string; checks: { id: string; ok: boolean }[] } }>("POST", "identity", { mrz, liveness: { blink: true, turn: true }, faceSimilarity: 0.81 });
-    expect(r.body.identity.checks.find((c) => c.id === "holder_TBC Bank (test data)")!.ok).toBe(false);
+    expect(r.body.identity.checks.find((c) => c.id === "holder_TBC Bank statement")!.ok).toBe(false);
     expect(r.body.identity.status).toBe("failed");
     expect(service.identity(me)!.status).toBe("failed");
   });

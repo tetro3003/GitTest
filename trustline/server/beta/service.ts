@@ -79,7 +79,7 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     return store
       .connections(userId)
       .filter((c) => (c.provider === "wise" || c.provider === "bank" || c.provider === "bank_id") && typeof c.settings.holderName === "string" && c.settings.holderName)
-      .map((c) => ({ source: c.provider === "wise" ? "Wise" : c.provider === "bank_id" ? BANK_NAMES[c.settings.bank as BankId] : "TBC Bank (test data)", name: String(c.settings.holderName) }));
+      .map((c) => ({ source: c.provider === "wise" ? "Wise" : c.provider === "bank_id" ? BANK_NAMES[c.settings.bank as BankId] : "TBC Bank statement", name: String(c.settings.holderName) }));
   }
 
   function bankIdentities(userId: string): BankIdentity[] {
@@ -95,9 +95,10 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     const input = scoreInput(userId);
     const pays = input.payments;
     const work = input.work;
-    const income = pays.filter((p) => p.status === "income").length;
+    const income = pays.filter((p) => p.status === "income" && p.source !== "bank").length;
+    const statement = pays.filter((p) => p.status === "income" && p.source === "bank").length;
     const dupes = pays.filter((p) => p.status === "duplicate").length;
-    run.step("trustline", `Recalculating your score from ${income} verified payment${income === 1 ? "" : "s"} and ${work.length} work fact${work.length === 1 ? "" : "s"}`, `Left out: own transfers, platform payouts, exchange withdrawals, dust${dupes ? `, ${dupes} duplicate${dupes === 1 ? "" : "s"} seen in two places` : ""}`);
+    run.step("trustline", `Recalculating your score from ${income} payment${income === 1 ? "" : "s"} verified at source${statement ? `, ${statement} from your bank statement` : ""} and ${work.length} work fact${work.length === 1 ? "" : "s"}`, `Left out: own transfers, platform payouts, exchange withdrawals, dust${dupes ? `, ${dupes} duplicate${dupes === 1 ? "" : "s"} seen in two places` : ""}`);
     const before = store.latestScore(userId);
     const report = computeBetaScore(input);
     store.saveScore(userId, report);
@@ -215,7 +216,7 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
   }
 
   async function syncBank(_c: StoredConnection, run: Run) {
-    run.step("bank", "TBC Bank is in test mode: transactions come from the uploaded test file. Upload a new file to change them.");
+    run.step("bank", "TBC transactions come from the monthly statement. Upload next month's statement to keep them current.");
     return true;
   }
 
@@ -415,18 +416,18 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     return c.id;
   }
 
-  /* ---------- TBC Bank (test mode) ---------- */
+  /* ---------- TBC Bank (monthly statement upload) ---------- */
 
   function bankImport(userId: string, filename: string, content: string) {
-    const parsed = parseBankFile(filename.slice(0, 80) || "test-file", content);
+    const parsed = parseBankFile(filename.slice(0, 80) || "statement", content);
     let c = store.connections(userId).find((x) => x.provider === "bank");
-    const stored = c ? store.connection(userId, c.id)! : store.createConnection({ userId, provider: "bank", label: "TBC Bank · test data", status: "ok", secret: null, settings: { test: true } });
+    const stored = c ? store.connection(userId, c.id)! : store.createConnection({ userId, provider: "bank", label: "TBC Bank · statement", status: "ok", secret: null, settings: {} });
     const run = startRun(store, userId, stored.id);
-    run.step("you", `Uploaded TBC test transactions: ${filename}`);
-    run.step("bank", `Read ${parsed.rows} transaction${parsed.rows === 1 ? "" : "s"}; ${parsed.payments.length} incoming`, "Test mode: live TBC open banking isn't part of the beta");
+    run.step("you", `Uploaded TBC statement: ${filename}`);
+    run.step("bank", `Read ${parsed.rows} transaction${parsed.rows === 1 ? "" : "s"}; ${parsed.payments.length} incoming`, "Open banking is used only to confirm identity; transactions come from the monthly statement");
     store.deletePayments(stored.id);
     savePayments(stored, parsed.payments, run);
-    store.updateConnection(stored.id, { status: "ok", lastSyncAt: now().toISOString(), lastError: null, settings: { test: true, file: filename, rows: parsed.rows, holderName: parsed.holderName } });
+    store.updateConnection(stored.id, { status: "ok", lastSyncAt: now().toISOString(), lastError: null, settings: { file: filename, rows: parsed.rows, holderName: parsed.holderName } });
     c = store.connections(userId).find((x) => x.provider === "bank");
     rescore(userId, run);
     return c!.id;

@@ -128,7 +128,7 @@ Open **http://localhost:3000/beta** and create an account. Nothing here is demo 
 | **Crypto wallets** | **Add wallet** → pick the network → **Connect & sign** with MetaMask, Phantom or TronLink (free, moves no money). Add as many as you like. No extension? **Sign manually**. |
 | **Wise** | Wise → **Settings → Developer tools → API tokens → Add new token → Read only**. Paste it into the Wise card. |
 | **Webflow** | *Use a site token*: Site settings → **Apps & integrations → API access → Generate API token** (read-only Sites + Pages). |
-| **TBC Bank (test mode)** | **Upload test transactions**: a CSV with `date, amount, currency, counterparty` columns, or the bank's open-banking JSON. Example: `trustline/public/samples/tbc-test-transactions.csv`. |
+| **TBC Bank (monthly statement)** | **Upload statement** once a month: a CSV with `date, amount, currency, counterparty` columns, or the bank's open-banking JSON. Open banking is used only to confirm identity, so transactions come from the statement. Lenders see these as "from bank statement", separate from payments verified at source. Example: `trustline/public/samples/tbc-test-transactions.csv`. |
 | **Confirm with your bank** | TBC or Bank of Georgia confirms the account holder's name through open banking (no balances, no transactions). Needs the bank's sandbox details in `.env.local` (`TBC_OB_BASE_URL` etc., see `.env.example`), e.g. the hackathon's TBC mock API. |
 | **ID check** | **Start** → choose **ID card** or **Passport** → photograph the code lines (`<<<`), the photo, then take a live selfie (blink, turn your head). Needs a camera; photos never leave your laptop. First use downloads ~15 MB of models. |
 
@@ -196,4 +196,4 @@ Access keys are encrypted before they are saved. The encryption key is in `trust
 npm test
 ```
 
-This runs 87 tests covering scoring, fraud checks, the API, file imports and connectors. All should pass.
+This runs 94 tests covering scoring, fraud checks, the API, file imports and connectors. All should pass.

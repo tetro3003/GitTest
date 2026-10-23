@@ -105,7 +105,8 @@ function Review({ applicantId, me, onBack, onError }: { applicantId: string; me:
   if (!r) return <p className="flex items-center gap-2 py-10 text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Building the report…</p>;
   const s = r.score;
   const bank = r.banks.find((b) => b.matchesAccount);
-  const counted = r.payments.filter((p) => p.status === "income").length;
+  const counted = r.payments.filter((p) => p.status === "income" && p.source !== "bank").length;
+  const fromStatement = r.payments.filter((p) => p.status === "income" && p.source === "bank").length;
   const rec = r.recommendation;
 
   return (
@@ -121,6 +122,7 @@ function Review({ applicantId, me, onBack, onError }: { applicantId: string; me:
               {bank && <span className="flex items-center gap-1 rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-200"><Landmark className="size-3.5" /> Identity confirmed by {BANK_NAMES[bank.bank]}</span>}
               {r.identity?.status === "verified" && <span className="flex items-center gap-1 rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-200"><UserCheck className="size-3.5" /> ID checked</span>}
               <span className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1"><ShieldCheck className="size-3.5" /> {counted} payments verified at source</span>
+              {fromStatement > 0 && <span className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1"><FileText className="size-3.5" /> {fromStatement} from bank statement</span>}
               <span className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1"><Timer className="size-3.5" /> Report built in {r.generatedMs} ms</span>
             </div>
           </div>

@@ -14,7 +14,7 @@ Everything runs in **demo mode**: synthetic accounts, real verification, scoring
 4. Run `npm run demo` and open http://localhost:3000/beta. You should see the amber **DEMO MODE** banner.
 5. Create the bank's account first, so it exists when Nino shares:
    **Create account → Lender** · Name `Ana Kvaratskhelia` · Bank or company `City Bank` · Email `ana@citybank.demo` · Password `password123`. Then **Log out**.
-6. The TBC test file is in the project: `trustline/public/samples/tbc-test-transactions.csv`. Copy it to your Desktop so it is easy to pick.
+6. The sample statement is in the project: `trustline/public/samples/tbc-test-transactions.csv`. Copy it to your Desktop and rename it `tbc-statement-2026-10.csv`.
 7. Browser zoom 100%, window about 1440×900, light theme. Close other tabs and turn on Do Not Disturb.
 8. Recorder: on a Mac, press `Shift + Cmd + 5` → "Record Selected Portion". On Windows, use `Win + G` or OBS. Record the browser window only.
 
@@ -26,61 +26,65 @@ Tip: do one dry run, delete `data/demo.db` again, recreate Ana, then record.
 
 | Do | Say |
 |---|---|
-| Start on the login page. | "This is Trustline. We help lenders give credit to freelancers, based on income we verify at the source." |
-| Point at the banner. | "Our persona is Nino Beridze, a freelance product designer. She's fictional. She's paid through Upwork, PayPal, Wise and direct clients, and she has no payslip." |
-| **Create account → Freelancer**: `Nino Beridze`, `nino@demo.ge`, `password123`. | "She's applying for credit at City Bank. Today the loan officer would collect screenshots and check them by hand." |
+| Start on the login page. | "This is Trustline: credit decisions for freelancers, based on verified income." |
+| Point at the banner. | "Meet Nino, a fictional freelance designer with no payslip. This demo covers designers, our first beta group. The same pipeline works for any freelancer." |
+| **Create account → Freelancer**: `Nino Beridze`, `nino@demo.ge`, `password123`. | "She's applying for credit at City Bank. First, she signs up." |
 
-## 0:20–0:50 · The input (say it's synthetic)
-
-| Do | Say |
-|---|---|
-| Point at the amber banner. | "Everything you see is synthetic. Demo mode replaces Gmail, Figma, Wise, Canva, Webflow and TBC open banking with local stand-ins. The verification, scoring and review are the real pipeline." |
-| Scroll slowly: Proof of work → Proof of income → Proof of identity. | "The inbox has 15 fake payment emails: 10 from Upwork, 2 from PayPal, 2 direct transfers, and one forged $9,000 email. The TBC file is test data in TBC's statement format." |
-| Scroll back up. Point at **Hide technical** (technical view is on). | "Technical view is on, so every API call is shown on the right." |
-
-## 0:50–1:50 · The system at work (one take, no cuts)
+## 0:20–0:45 · The input (say it's synthetic)
 
 | Do | Say |
 |---|---|
-| **Sign in with Figma** → consent page → **Allow**. | "Nino approves read-only access. Her password never reaches us." |
-| Paste two file links (one per line), then **Save and read files**:<br>`https://www.figma.com/design/BloomApp123456/Bloom`<br>`https://www.figma.com/design/KaveaFlow98765/Kavea` | "We read version history and client comments. That's proof of real work." |
-| **Connect Gmail** → **Allow**. | "Gmail is read-only, and only emails from Upwork, PayPal, Payoneer and Fiverr. Each email's DKIM signature is checked, and AI reads the amount, client and date." |
-| **Connect Canva** → Allow. **Connect Webflow** → Allow. | "More proof of work, the same way." |
-| **Connect with a read-only token** (Wise): type anything 20+ characters, e.g. `demo-wise-read-only-token-123456`, then submit. | "Wise: euro payments from a German client." |
-| **Upload test transactions** → choose `tbc-test-transactions.csv`. | "TBC test statement. Payouts we already counted from Upwork aren't counted twice." |
-| **Confirm with TBC Bank** → Allow. | "Open banking confirms the account owner's name matches Nino. Name only: no balances, no transactions." |
-| Scroll the **Behind the scenes** panel down to the line *"1 email failed the signature check and was thrown away"*. Hover it. | "Here's error handling: the forged $9,000 email failed the signature check, so it doesn't count." |
-| Scroll to the top: score and **Why this score**. | "The result: a score where every point has a reason." |
-| **Apply for credit** → choose **City Bank** → **Share my report**. | "Nino shares her report with City Bank. She can revoke it any time." |
-| **Log out**. | |
+| Point at the amber banner. | "Everything here is synthetic. Every outside service is a local stand-in, and the inbox hides one forged payment email. The data is fake, but the verification, scoring and review are the real pipeline." |
+| Scroll: Proof of work → Proof of income → Proof of identity, then back up. | "Nino proves three things: her work, her income, and who she is. Every API call shows on the right." |
 
-## 1:50–2:30 · AI evidence (show it on screen)
+## 0:45–1:40 · The system at work (one take, no cuts)
 
 | Do | Say |
 |---|---|
-| **Log in** as `ana@citybank.demo` / `password123` → click **Nino Beridze**. | "Ana is a loan officer at City Bank. She's fictional too." |
-| Hover **Report built in X ms**. | "The report is built when she opens it, and the time is measured." |
-| Hover **Explanation for the officer** and its badge. | With a key: "The explanation is written by Claude, using only verified facts." Without: "No Claude key here, so the system falls back to a rule-based explanation and labels it." |
-| Hover the suggestion box (*Suggest approve · up to $X/month* and its reasons). | "The reasoning trace: the suggested action and the factors behind it. It's only a suggestion." |
-| **Approve** → keep the amount → note: `Steady verified income over 12 months; identity confirmed by TBC.` → **Record decision**. | "The decision is made by a person. Decline and Request info need a written reason." |
-| Scroll to **Audit trail**. Hover *Human decision: Approved…*. | "The audit trail shows who opened the report, what the system suggested, and what the person decided, and whether they agreed with it." |
-| **Log out**. | |
+| **Sign in with Figma** → consent page → **Allow**. | "She gives Figma read-only access. Her password never reaches us." |
+| Paste two links (one per line), then **Save and read files**:<br>`https://www.figma.com/design/BloomApp123456/Bloom`<br>`https://www.figma.com/design/KaveaFlow98765/Kavea` | "Then she picks two client files." |
+| In **Behind the scenes**, hover *"…210 saved versions, 190 by you, across 136 days"*, then *"9 comments, 9 from other people"*. | "From Figma we read the version history: how many versions she saved, over how many days, and comments from her clients." |
+| **Connect Gmail** → **Allow**. | "Gmail is read-only, and limited to payment senders. Each email's signature is checked, and AI extracts the amount, client and date." |
+| **Connect with a read-only token** (Wise): type `demo-wise-read-only-token-123456`, submit. | "Wise adds euro payments from a client in Germany." |
+| **Upload statement** → choose `tbc-statement-2026-10.csv`. Hover *"next statement due …"*. | "Open banking is used only to confirm identity, so Nino uploads her TBC statement once a month. Payouts we already counted aren't counted twice." |
+| **Confirm with TBC Bank** → Allow. Hover *BERIDZE NINO · Matches*. | "TBC open banking confirms the account owner's name matches Nino. Name only, no balances." |
+| In **Behind the scenes**, hover *"1 email failed the signature check and was thrown away"*. | "Behind the scenes, the forged email failed its signature check, so it was thrown away." |
 
-## 2:30–3:00 · Output and impact
+## 1:40–2:10 · How the score works
 
 | Do | Say |
 |---|---|
-| **Log in** as `nino@demo.ge` → scroll to **Apply for credit** → open **Who accessed my data**. | "Nino sees the decision and every access to her data." |
-| Scroll back to the top (score + verified income). | "In this run: [N] payments verified at the source, one forged email blocked, seven sources checked automatically, and the report built in [X] milliseconds. Zero screenshots." |
-| End on the score. | "The officer reviews and decides; Trustline does the collecting and checking. Let's make freelancers bankable." |
+| Scroll to **Why this score**. | "The score starts at five hundred. Each factor adds or removes points, and each one comes with a reason." |
+| Hover each row, top to bottom. | "We measure verified income, how many months she was paid, how steady it is, how many clients pay her, real design work, and whether that work lines up with the money." |
+| Scroll to **Work we found**, hover the Figma file. | "Below the score, the officer sees every client file we found, how many versions she saved, and who else worked on it." |
+| Hover **Money vs. work**. | "And income should line up with real design hours, month by month." |
+| **Apply for credit** → **City Bank** → **Share my report**, then **Log out**. | "Nino shares her report with City Bank. She can revoke it at any time." |
 
-Read **N** from the review header (*N payments verified at source*) and **X** from *Report built in X ms*.
+## 2:10–2:45 · AI evidence (show it on screen)
+
+| Do | Say |
+|---|---|
+| **Log in** as `ana@citybank.demo` → click **Nino Beridze**. Hover **Report built in X ms**. | "The system suggests. A person decides. Ana, a fictional loan officer at City Bank, opens the report. It's built on request, in milliseconds." |
+| Hover the explanation and the suggestion box. | "She gets a written explanation, a suggested action, and the reasons behind it." |
+| Hover the badge (**Claude** or **Rule-based summary**). | With a key: "Claude wrote this explanation, using only verified facts." Without: "There's no Claude key in this recording, so a labelled, rule-based fallback wrote it." |
+| **Approve** → keep the amount → note `Steady verified income; identity confirmed by TBC.` → **Record decision**. | "The decision is Ana's. She approves, sets the monthly amount, and adds a note." |
+| Scroll to **Audit trail**, hover *Human decision: Approved…*. | "The audit trail records who opened the report, what the system suggested, and what Ana decided. Nino sees the same list." |
+
+## 2:45–3:00 · Output and impact
+
+| Do | Say |
+|---|---|
+| Stay on the review header (or scroll back up). | "In this run, [N] payments were verified where they came from, [M] more came from her monthly statement, and one forged email was blocked. No screenshots. Trustline does the checking; the officer decides." |
+| End. | "Designers today, every freelancer next. Let's make freelancers bankable." |
+
+Read **N** from *N payments verified at source* and **M** from *M from bank statement* in the review header.
 
 ---
 
 ## Rules for the voiceover
 
-- Say "synthetic" or "fictional" at least once in the first 50 seconds.
-- Don't claim live bank integrations: TBC is **test data**, open banking is a **stand-in** in demo mode.
-- Only compare with manual review time if you have a source (e.g. a lender you interviewed: "officer X told us a manual check takes about N minutes"). Otherwise say "instead of collecting screenshots and checking them by hand".
-- Keep the 0:50–1:50 part as one take. You may cut between segments.
+- Say "synthetic" or "fictional" at least once in the first 45 seconds.
+- Say this demo covers designers, and that the pipeline works for any freelancer.
+- Statement payments are "from her statement", not "verified at source": the customer uploads them.
+- Only compare with manual review time if you have a source (e.g. a lender you interviewed). Otherwise say "instead of collecting screenshots and checking them by hand".
+- Keep the 0:45–1:40 part as one take. You may cut between segments.

@@ -3,9 +3,10 @@ import type { NewPayment } from "../store";
 import { ProviderError } from "./figma";
 
 /**
- * TBC Bank TEST MODE. Live open-banking access isn't part of the beta, so
- * test transactions are imported from a file instead (the bank's open-banking
- * JSON, or a CSV). Everything imported is labelled as test data.
+ * TBC Bank statement upload. Open banking is used for verification only
+ * (who owns the account), so transactions come from the statement the
+ * freelancer uploads each month (CSV, or the bank's open-banking JSON).
+ * Statement payments are labelled as uploaded, not verified at source.
  */
 
 export interface BankImport {
@@ -14,7 +15,7 @@ export interface BankImport {
   rows: number;
 }
 
-const BANK = "TBC Bank (test data)";
+const BANK = "TBC Bank statement";
 
 interface BgTx {
   transactionId?: string;
@@ -43,7 +44,7 @@ function credit(i: number, file: string, t: { id?: string; date: string; amount:
     payer: (t.payer || t.text || "Unknown sender").slice(0, 120),
     payerLabel: null,
     status: "income",
-    note: "Test data",
+    note: "Uploaded statement",
     proof: `${BANK} · ${file}${t.id ? ` · ${t.id}` : ` · row ${i + 1}`}`,
   };
 }

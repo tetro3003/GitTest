@@ -19,7 +19,7 @@ export interface SourceSpec {
   oauth?: OAuthProvider;
   /** Paste-a-token alternative. */
   token?: { kind: "wise" | "webflow"; label: string; help: React.ReactNode };
-  /** File import (TBC test mode). */
+  /** File import (monthly TBC statement). */
   upload?: { accept: string; help: React.ReactNode };
   badge?: string;
   /** What the connected card shows as its count. */
@@ -117,7 +117,7 @@ export function SourceCard({ spec, connections, setup, onChange, onError }: { sp
             <>
               <input ref={fileRef} type="file" accept={spec.upload.accept} className="sr-only" id={`up-${spec.provider}`} onChange={(e) => upload(e.target.files?.[0])} />
               <Button size="sm" className="rounded-xl" onClick={() => fileRef.current?.click()} disabled={busy}>
-                {busy ? <Loader2 className="animate-spin" /> : <Upload />} {connections.length ? "Replace test file" : "Upload test transactions"}
+                {busy ? <Loader2 className="animate-spin" /> : <Upload />} {connections.length ? "Upload this month's statement" : "Upload statement"}
               </Button>
             </>
           )}
@@ -174,9 +174,9 @@ export const MONEY_SOURCES: SourceSpec[] = [
   {
     provider: "bank",
     name: "TBC Bank",
-    badge: "Test mode",
-    what: "Bank transactions. Live open banking isn't in the beta, so test transactions are imported from a file.",
-    upload: { accept: ".csv,.json,text/csv,application/json", help: <>CSV with date, amount, currency, counterparty columns, or the bank&apos;s open-banking JSON. Marked “test data” everywhere.</> },
-    count: (c) => `${c.stats.payments} incoming · ${String(c.settings.rows ?? 0)} rows`,
+    badge: "Monthly",
+    what: "Upload your statement once a month. Open banking only confirms the account is yours, so transactions come from the statement.",
+    upload: { accept: ".csv,.json,text/csv,application/json", help: <>Export from TBC internet banking (CSV with date, amount, currency, counterparty), or the bank&apos;s open-banking JSON. Shown to lenders as “uploaded statement”.</> },
+    count: (c) => `${c.stats.payments} incoming${c.lastSyncAt ? ` · next statement due ${new Date(new Date(c.lastSyncAt).getTime() + 30 * 864e5).toLocaleDateString([], { day: "numeric", month: "short" })}` : ""}`,
   },
 ];
