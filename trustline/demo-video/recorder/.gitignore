@@ -1,0 +1,7 @@
+models/
+video/
+*.wav
+lines.json
+rec.log
+yavg.log
+vo.wav
