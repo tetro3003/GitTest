@@ -56,6 +56,9 @@ function activeWeeks(work: readonly WorkFact[], asOf: string, weeks: number): nu
   return seen.size;
 }
 
+const TOOL_NAMES: Record<string, string> = { figma: "Figma", canva: "Canva", webflow: "Webflow", miro: "Miro", dribbble: "Dribbble" };
+export const toolName = (t: string) => TOOL_NAMES[t] ?? t;
+
 const usd = (x: number) => `$${Math.round(x).toLocaleString("en-US")}`;
 
 export interface BetaScoreInput {
@@ -130,7 +133,10 @@ export function computeBetaScore(input: BetaScoreInput): BetaScore {
 
   add("income_level", "Verified monthly income", verifiedMonthlyIncome <= 0 ? -60 : scale(Math.log10(verifiedMonthlyIncome), Math.log10(300), Math.log10(3000), -10, 80), `Typical month over the last 6: ${usd(verifiedMonthlyIncome)}, counted only from payments we could prove.`);
   add("regularity", "Months with income", scale(monthsWithIncome, 3, 12, -40, 70), `You were paid in ${monthsWithIncome} of the last 12 months.`);
-  add("stability", "Income stability", scale(cv, 0.2, 1.2, 60, -40), cv < 0.5 ? "Your monthly income is fairly steady." : "Your income changes a lot from month to month.");
+  {
+    const pts = scale(cv, 0.2, 1.2, 60, -40);
+    add("stability", "Income stability", pts, pts >= 30 ? "Your monthly income is steady." : pts > 0 ? "Your monthly income is fairly steady, with some ups and downs." : "Your income changes a lot from month to month.");
+  }
   {
     let pts = payers.size >= 3 ? 25 : payers.size === 2 ? 10 : -10;
     if (payers.size > 1 && topShare > 0.85) pts -= 10;
@@ -140,7 +146,7 @@ export function computeBetaScore(input: BetaScoreInput): BetaScore {
   if (!hasWork) add("work", "Design work evidence", -30, "No work tool is connected, so we can't see the work behind the income.");
   else {
     const tools = [...new Set(input.work.filter((w) => w.kind !== "comment").map((w) => w.source))];
-    add("work", "Design work evidence", scale(weeksActive, 2, 10, -10, 50), `Your work tools (${tools.join(", ")}) show you designing in ${weeksActive} of the last 12 weeks.`);
+    add("work", "Design work evidence", scale(weeksActive, 2, 10, -10, 50), `Your work tools (${tools.map(toolName).join(", ")}) show you designing in ${weeksActive} of the last 12 weeks.`);
     add("match", "Work matches income", scale(matchRatio, 0.3, 0.9, -20, 40), `${matched} of ${incomeMonths.length} paid months also show design work.`);
   }
 

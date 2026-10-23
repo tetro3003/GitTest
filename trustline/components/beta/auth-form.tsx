@@ -11,6 +11,7 @@ export function AuthForm({ onDone }: { onDone: () => void }) {
   const [mode, setMode] = useState<"signup" | "login">("signup");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [role, setRole] = useState<"freelancer" | "lender">("freelancer");
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -20,7 +21,7 @@ export function AuthForm({ onDone }: { onDone: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      if (mode === "signup") await betaApi.signup({ email, password, name: String(f.get("name") ?? "") });
+      if (mode === "signup") await betaApi.signup({ email, password, name: String(f.get("name") ?? ""), role, org: String(f.get("org") ?? "") });
       else await betaApi.login({ email, password });
       onDone();
     } catch (err) {
@@ -72,10 +73,30 @@ export function AuthForm({ onDone }: { onDone: () => void }) {
         </div>
         <form onSubmit={submit} className="space-y-4">
           {mode === "signup" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Full name (as on your ID)</Label>
-              <Input id="name" name="name" autoComplete="name" required className="h-11 rounded-xl" />
-            </div>
+            <>
+              <fieldset>
+                <legend className="mb-1.5 text-sm font-medium">I am a…</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  {([["freelancer", "Freelancer", "Prove my income"], ["lender", "Lender", "Review applicants"]] as const).map(([v, t, sub]) => (
+                    <label key={v} className={`cursor-pointer rounded-xl border p-3 text-sm ${role === v ? "border-brand bg-brand-soft/60" : "hover:bg-muted/60"}`}>
+                      <input type="radio" name="role" value={v} className="sr-only" checked={role === v} onChange={() => setRole(v)} />
+                      <span className="block font-semibold">{t}</span>
+                      <span className="block text-xs text-muted-foreground">{sub}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <div className="space-y-1.5">
+                <Label htmlFor="name">{role === "lender" ? "Your name" : "Full name (as on your ID)"}</Label>
+                <Input id="name" name="name" autoComplete="name" required className="h-11 rounded-xl" />
+              </div>
+              {role === "lender" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="org">Bank or company</Label>
+                  <Input id="org" name="org" required placeholder="e.g. City Bank" className="h-11 rounded-xl" />
+                </div>
+              )}
+            </>
           )}
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>

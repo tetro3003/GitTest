@@ -58,7 +58,7 @@ export function createBetaHttp(service: BetaService) {
       if (method === "POST" && route === "signup") {
         const b = await body(req);
         rateLimit(`signup:${req.headers.get("x-forwarded-for") ?? "local"}`, 20);
-        const { user, token } = service.signup({ email: s(b, "email"), name: s(b, "name"), password: s(b, "password") });
+        const { user, token } = service.signup({ email: s(b, "email"), name: s(b, "name"), password: s(b, "password"), role: s(b, "role") === "lender" ? "lender" : "freelancer", org: s(b, "org") });
         return json({ user }, 201, { "Set-Cookie": sessionCookie(token, req) });
       }
       if (method === "POST" && route === "login") {
@@ -129,6 +129,27 @@ export function createBetaHttp(service: BetaService) {
       if (method === "GET" && route === "score") return json({ score: service.score(user.id), history: service.scoreHistory(user.id) });
       if (method === "GET" && route === "payments") return json(service.payments(user.id));
       if (method === "GET" && route === "work") return json(service.work(user.id));
+
+      /* sharing with lenders, lender review and human decisions */
+      if (method === "GET" && route === "lenders") return json(service.lenders());
+      if (method === "GET" && route === "shares") return json(service.sharesOf(user.id));
+      if (method === "POST" && route === "shares") {
+        const b = await body(req);
+        return json({ shareId: service.shareWith(user.id, s(b, "lenderId")) }, 201);
+      }
+      const revoke = route.match(/^shares\/([\w-]+)\/revoke$/);
+      if (method === "POST" && revoke) {
+        service.revokeShare(user.id, revoke[1]);
+        return json({ ok: true });
+      }
+      if (method === "GET" && route === "lender/applicants") return json(service.applicantSummaries(user.id));
+      const app = route.match(/^lender\/applicants\/([\w-]+)(?:\/(decision))?$/);
+      if (app && method === "GET" && !app[2]) return json(await service.lenderReport(user.id, app[1]));
+      if (app && method === "POST" && app[2] === "decision") {
+        const b = await body(req);
+        service.decide(user.id, app[1], { decision: s(b, "decision") as "approve" | "decline" | "request_info", amountUsd: typeof b.amountUsd === "number" ? b.amountUsd : null, note: s(b, "note") });
+        return json({ ok: true }, 201);
+      }
 
       if (method === "POST" && route === "figma/start") return json(service.figmaStart(user.id, `${publicOrigin(req)}/api/beta/figma/callback`));
       if (method === "POST" && route === "figma/token") {

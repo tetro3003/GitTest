@@ -41,13 +41,10 @@ const day = (iso: string) => new Date(iso).toLocaleDateString([], { day: "numeri
 
 /** "Behind the scenes": a live console of every step Trustline took, grouped by action, newest first. */
 export function Timeline({ entries, connections, showTech, live }: { entries: TimelineEntry[]; connections: BetaConnection[]; showTech: boolean; live: boolean }) {
-  const runs: { runId: string; items: TimelineEntry[] }[] = [];
-  for (const e of entries) {
-    const last = runs[runs.length - 1];
-    if (last?.runId === e.runId) last.items.push(e);
-    else runs.push({ runId: e.runId, items: [e] });
-  }
-  runs.reverse();
+  // One group per action. Actions can run at the same time, so their steps interleave: group by run, not by neighbour.
+  const byRun = new Map<string, TimelineEntry[]>();
+  for (const e of entries) byRun.set(e.runId, [...(byRun.get(e.runId) ?? []), e]);
+  const runs = [...byRun].map(([runId, items]) => ({ runId, items })).sort((a, b) => b.items[b.items.length - 1].id - a.items[a.items.length - 1].id);
 
   return (
     <div className="night overflow-hidden rounded-3xl">

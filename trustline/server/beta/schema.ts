@@ -93,6 +93,38 @@ export function migrateBeta(db: Database.Database) {
       verified_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS beta_shares (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES beta_users(id) ON DELETE CASCADE,
+      lender_id TEXT NOT NULL REFERENCES beta_users(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL,
+      revoked_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS beta_decisions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES beta_users(id) ON DELETE CASCADE,
+      lender_id TEXT NOT NULL REFERENCES beta_users(id) ON DELETE CASCADE,
+      officer TEXT NOT NULL,
+      decision TEXT NOT NULL,
+      amount_usd REAL,
+      note TEXT NOT NULL,
+      recommendation TEXT NOT NULL,
+      score INTEGER,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS beta_audit (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL REFERENCES beta_users(id) ON DELETE CASCADE,
+      lender_id TEXT,
+      at TEXT NOT NULL,
+      actor TEXT NOT NULL,
+      action TEXT NOT NULL,
+      detail TEXT
+    );
+    CREATE INDEX IF NOT EXISTS beta_audit_by_user ON beta_audit (user_id, id);
+
     CREATE TABLE IF NOT EXISTS beta_scores (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL REFERENCES beta_users(id) ON DELETE CASCADE,
@@ -109,4 +141,6 @@ export function migrateBeta(db: Database.Database) {
   addColumn("beta_oauth_states", "verifier", "TEXT");
   addColumn("beta_work", "source", "TEXT NOT NULL DEFAULT 'figma'");
   addColumn("beta_payments", "source", "TEXT NOT NULL DEFAULT 'wallet'");
+  addColumn("beta_users", "role", "TEXT NOT NULL DEFAULT 'freelancer'");
+  addColumn("beta_users", "org", "TEXT");
 }

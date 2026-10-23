@@ -3,6 +3,8 @@ import { reconcilePayments } from "@/lib/beta/reconcile";
 import { computeBetaScore } from "@/lib/beta/score";
 import { BANK_NAMES, type BankId, type BankIdentity } from "@/lib/beta/types";
 import { samePerson } from "@/lib/beta/names";
+import { recommend, RECOMMENDATION_LABEL } from "@/lib/beta/decision";
+import type { ApplicantSummary, DecisionKind, LenderReport, UserRole } from "@/lib/beta/types";
 import type { BetaScore, BetaUser, ChainFamily, IdentityCheck, OAuthProvider, PaymentFact, ProviderId, TimelineActor, WalletChallenge } from "@/lib/beta/types";
 import { checkPassword, hashPassword, newId, newToken } from "./auth";
 import { exchangeFigmaCode, figmaAuthorizeUrl, figmaOAuthConfigured, figmaWhoAmI, ProviderError, readFigmaWork, refreshFigmaIfNeeded, type FigmaSecret } from "./providers/figma";
@@ -14,6 +16,8 @@ import { OAUTH, oauthAuthorizeUrl, oauthConfigured, oauthExchange, oauthRefreshI
 import { readWisePayments } from "./providers/wise";
 import { readCanva, readDribbble, readMiro, readWebflow, type WorkRead } from "./providers/work-tools";
 import { evaluateId, type IdSubmission } from "./idcheck";
+import { writeMemo } from "./explain";
+import { DEMO } from "./demo";
 import { classifyPayment, normalizeAddress, readWalletPayments, verifyWalletSignature, walletChallengeMessage } from "./providers/wallets";
 import { startRun, type BetaStore, type Run, type StoredConnection } from "./store";
 import type { Vault } from "./vault";
@@ -31,22 +35,25 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
 
   /* ---------- accounts ---------- */
 
-  function signup(input: { email: string; name: string; password: string }): { user: BetaUser; token: string } {
+  function signup(input: { email: string; name: string; password: string; role?: UserRole; org?: string }): { user: BetaUser; token: string } {
     const email = input.email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ProviderError("Enter a valid email address");
     if (input.name.trim().length < 2) throw new ProviderError("Enter your full name");
     if (input.password.length < 8) throw new ProviderError("Password must be at least 8 characters");
     if (store.userByEmail(email)) throw new ProviderError("An account with this email already exists. Log in instead.", 409);
-    const user = store.createUser({ email, name: input.name.trim(), passwordHash: hashPassword(input.password) });
+    const role: UserRole = input.role === "lender" ? "lender" : "freelancer";
+    const org = role === "lender" ? (input.org ?? "").trim() : "";
+    if (role === "lender" && org.length < 2) throw new ProviderError("Enter the bank or company you work for");
+    const user = store.createUser({ email, name: input.name.trim(), passwordHash: hashPassword(input.password), role, org: org || null });
     const run = startRun(store, user.id, null);
-    run.ok("you", `Account created for ${user.name}`, "Password stored as a scrypt hash: even we can't read it");
+    run.ok("you", role === "lender" ? `Lender account created for ${user.name} (${org})` : `Account created for ${user.name}`, "Password stored as a scrypt hash: even we can't read it");
     return { user, token: store.createSession(user.id) };
   }
 
   function login(email: string, password: string): { user: BetaUser; token: string } {
     const u = store.userByEmail(email.trim());
     if (!u || !checkPassword(password, u.passwordHash)) throw new ProviderError("Wrong email or password", 401);
-    const user: BetaUser = { id: u.id, email: u.email, name: u.name, createdAt: u.createdAt };
+    const user: BetaUser = { id: u.id, email: u.email, name: u.name, createdAt: u.createdAt, role: u.role, org: u.org };
     return { user, token: store.createSession(user.id) };
   }
 
@@ -475,6 +482,108 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
     return result;
   }
 
+  /* ---------- lenders: consent, review, human decision, audit ---------- */
+
+  function requireRole(userId: string, role: UserRole): BetaUser {
+    const u = store.user(userId);
+    if (!u || u.role !== role) throw new ProviderError(role === "lender" ? "Only lender accounts can do this" : "Only freelancer accounts can do this", 403);
+    return u;
+  }
+
+  function shareWith(userId: string, lenderId: string) {
+    const me = requireRole(userId, "freelancer");
+    const lender = store.user(lenderId);
+    if (!lender || lender.role !== "lender") throw new ProviderError("Lender not found", 404);
+    if (store.activeShare(userId, lenderId)) throw new ProviderError(`You already share with ${lender.org}`, 409);
+    const id = store.createShare(userId, lenderId);
+    store.audit({ userId, lenderId, actor: me.name, action: "Shared report", detail: `Consent given to ${lender.org}: score, verified income, reasons and evidence` });
+    startRun(store, userId, null).ok("you", `Shared your verified report with ${lender.org}`, "You can revoke this at any time; access ends immediately");
+    return id;
+  }
+
+  function revokeShare(userId: string, shareId: string) {
+    const me = requireRole(userId, "freelancer");
+    const r = store.revokeShare(userId, shareId);
+    if (!r) throw new ProviderError("Share not found", 404);
+    const lender = store.user(r.lenderId);
+    store.audit({ userId, lenderId: r.lenderId, actor: me.name, action: "Revoked access", detail: `${lender?.org} can no longer open the report` });
+    startRun(store, userId, null).ok("you", `Revoked ${lender?.org}'s access`);
+  }
+
+  function applicantSummaries(lenderId: string): ApplicantSummary[] {
+    requireRole(lenderId, "lender");
+    const decisions = store.decisions({ lenderId });
+    return store.applicantsOf(lenderId).map((a) => {
+      const s = score(a.userId);
+      return {
+        applicantId: a.userId,
+        name: a.name,
+        sharedAt: a.sharedAt,
+        score: s.score,
+        band: s.band,
+        verifiedMonthlyIncome: s.verifiedMonthlyIncome,
+        flags: s.flags.length,
+        lastDecision: decisions.find((d) => d.applicantId === a.userId) ?? null,
+      };
+    });
+  }
+
+  function requireShare(lenderId: string, applicantId: string) {
+    const share = store.activeShare(applicantId, lenderId);
+    if (!share) throw new ProviderError("This applicant hasn't shared a report with you, or revoked access", 403);
+    return share;
+  }
+
+  async function lenderReport(lenderId: string, applicantId: string): Promise<LenderReport> {
+    const lender = requireRole(lenderId, "lender");
+    const share = requireShare(lenderId, applicantId);
+    const applicant = store.user(applicantId)!;
+    const t0 = performance.now();
+    const input = scoreInput(applicantId);
+    const s = computeBetaScore(input);
+    const rec = recommend(s);
+    const banks = bankIdentities(applicantId);
+    const generatedMs = Math.round((performance.now() - t0) * 10) / 10;
+    const explanation = await writeMemo({ name: applicant.name, score: s, recommendation: rec, payments: input.payments, work: input.work, identity: input.identity ?? null, banks });
+    store.audit({ userId: applicantId, lenderId, actor: `${lender.name} (${lender.org})`, action: "Opened report", detail: `Report built in ${generatedMs} ms from ${input.payments.length} payments and ${input.work.length} work facts` });
+    store.audit({ userId: applicantId, lenderId, actor: "Trustline", action: explanation.by === "claude" ? "Explanation written by Claude" : "Rule-based explanation", detail: explanation.note });
+    startRun(store, applicantId, null).step("bank", `${lender.org} opened your report`, `Officer: ${lender.name}`);
+    return {
+      applicant: { id: applicant.id, name: applicant.name, email: applicant.email },
+      sharedAt: share.createdAt,
+      score: s,
+      recommendation: rec,
+      explanation,
+      payments: input.payments,
+      work: input.work,
+      identity: input.identity ?? null,
+      banks,
+      sources: store.connections(applicantId).map((c) => ({ provider: c.provider, label: c.label, lastSyncAt: c.lastSyncAt })),
+      generatedMs,
+      decisions: store.decisions({ userId: applicantId, lenderId }),
+      audit: store.auditTrail(applicantId, lenderId),
+    };
+  }
+
+  const DECISION_TEXT: Record<DecisionKind, string> = { approve: "Approved", decline: "Declined", request_info: "Requested more information" };
+
+  function decide(lenderId: string, applicantId: string, input: { decision: DecisionKind; amountUsd?: number | null; note?: string }) {
+    const lender = requireRole(lenderId, "lender");
+    requireShare(lenderId, applicantId);
+    if (!["approve", "decline", "request_info"].includes(input.decision)) throw new ProviderError("Choose approve, decline or request more information");
+    const note = (input.note ?? "").trim().slice(0, 1000);
+    if (input.decision !== "approve" && note.length < 3) throw new ProviderError("Add a short reason for the applicant");
+    const amount = input.decision === "approve" ? Number(input.amountUsd) : null;
+    if (input.decision === "approve" && !(amount! > 0)) throw new ProviderError("Enter the approved monthly repayment");
+    const s = computeBetaScore(scoreInput(applicantId));
+    const rec = recommend(s);
+    const followed = (rec.action === "approve" && input.decision === "approve") || (rec.action === "decline" && input.decision === "decline") || (rec.action === "review" && input.decision === "request_info");
+    store.addDecision({ applicantId, lenderId, officer: lender.name, decision: input.decision, amountUsd: amount, note, recommendation: RECOMMENDATION_LABEL[rec.action], score: s.score });
+    const what = `${DECISION_TEXT[input.decision]}${amount ? ` up to $${Math.round(amount).toLocaleString("en-US")}/month` : ""}`;
+    store.audit({ userId: applicantId, lenderId, actor: `${lender.name} (${lender.org})`, action: `Human decision: ${what}`, detail: `${followed ? "Same as" : "Overrode"} system suggestion (${RECOMMENDATION_LABEL[rec.action]}, score ${s.score ?? "n/a"})${note ? ` · Note: ${note}` : ""}` });
+    startRun(store, applicantId, null)[input.decision === "decline" ? "warn" : "ok"]("bank", `${lender.org}: ${what}`, note || null);
+  }
+
   /* ---------- misc ---------- */
 
   function disconnect(userId: string, id: string) {
@@ -518,10 +627,18 @@ export function createBetaService(deps: { store: BetaStore; vault: Vault; fetch?
       miro: oauthConfigured("miro"),
       dribbble: oauthConfigured("dribbble"),
       ai: aiAvailable(),
+      demo: DEMO(),
       tbcId: bankIdentityConfigured("tbc"),
       bogId: bankIdentityConfigured("bog"),
     }),
     bankIdentityStart,
+    lenders: () => store.lenders(),
+    shareWith,
+    revokeShare,
+    sharesOf: (userId: string) => ({ shares: store.sharesOf(userId), decisions: store.decisions({ userId }), audit: store.auditTrail(userId) }),
+    applicantSummaries,
+    lenderReport,
+    decide,
     bankIdentityCallback,
     bankIdentities,
     oauthStart,

@@ -1,4 +1,5 @@
 import { figmaFileKey } from "@/server/connectors/figma";
+import { DEMO, demoConsentUrl } from "../demo";
 import type { NewWork, Run } from "../store";
 
 /**
@@ -37,6 +38,7 @@ export function figmaOAuthConfigured(): boolean {
 
 export function figmaAuthorizeUrl(state: string, redirectUri: string): string {
   const q = new URLSearchParams({ client_id: process.env.FIGMA_CLIENT_ID ?? "", redirect_uri: redirectUri, scope: FIGMA_SCOPES, state, response_type: "code" });
+  if (DEMO()) return demoConsentUrl("figma", redirectUri, state, FIGMA_SCOPES);
   return `https://www.figma.com/oauth?${q}`;
 }
 

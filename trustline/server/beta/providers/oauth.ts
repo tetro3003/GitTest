@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { OAuthProvider } from "@/lib/beta/types";
+import { DEMO, demoConsentUrl } from "../demo";
 import type { Run } from "../store";
 import { ProviderError } from "./figma";
 
@@ -103,6 +104,7 @@ export function oauthAuthorizeUrl(p: OAuthProvider, state: string, redirectUri: 
     q.set("code_challenge", b64url(createHash("sha256").update(verifier).digest()));
     q.set("code_challenge_method", c.pkce);
   }
+  if (DEMO()) return { url: demoConsentUrl(p, redirectUri, state, c.scopes), verifier };
   return { url: `${c.authUrl}?${q}`, verifier };
 }
 

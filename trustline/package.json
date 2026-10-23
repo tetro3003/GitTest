@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "demo": "DEMO_MODE=1 TRUSTLINE_DB_PATH=data/demo.db next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

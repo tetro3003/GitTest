@@ -154,6 +154,20 @@ In every app, set the **redirect / callback URL** exactly as shown.
 - Transfers **between your own wallets**, top-ups and tiny spam transfers never count.
 - The **daily robot** re-reads every connection once a day while the app is running. **Refresh** does it now.
 
+### The lender side (human decision)
+1. Sign up a second account and pick **Lender** (enter a bank name, e.g. "City Bank").
+2. As the freelancer, open **Apply for credit**, choose the bank, click **Share my report**.
+3. As the lender, open the applicant: score, verified payments, the written explanation, the system's suggestion, and the audit trail.
+4. A person decides: **Approve** (with a monthly amount), **Request info** or **Decline** (both need a note). The decision is logged, and the freelancer sees it under **Who accessed my data**.
+
+The written explanation comes from Claude when `ANTHROPIC_API_KEY` is set in `.env.local`. Without it (or if Claude is unavailable) a rule-based explanation is used and labelled as such.
+
+### Demo mode (synthetic data, for videos and pitches)
+```
+npm run demo
+```
+Opens the same app on http://localhost:3000 with an amber **DEMO MODE** banner. Every outside service (Gmail, Figma, Wise, Canva, Webflow, Miro, Dribbble, TBC/BOG open banking) is replaced by synthetic stand-ins, and sign-in screens are mock consent pages. The persona is *Nino Beridze*, a fictional designer. The demo has its own database (`data/demo.db`), so your real data is untouched. Delete that file to start the demo over.
+
 Access keys are encrypted before they are saved. The encryption key is in `trustline/data/vault.key`: never share it.
 
 ---

@@ -1,8 +1,9 @@
 "use client";
 
+import type { ApplicantSummary, AuditEvent, DecisionKind, LenderDecision, LenderReport, LenderShare } from "./types";
 import type { BankIdentity, BetaConnection, BetaScore, BetaUser, ChainFamily, IdentityCheck, OAuthProvider, PaymentFact, TimelineEntry, WalletChallenge, WorkFact } from "./types";
 
-export type SetupState = Record<"figma" | OAuthProvider | "ai" | "tbcId" | "bogId", boolean>;
+export type SetupState = Record<"figma" | OAuthProvider | "ai" | "tbcId" | "bogId" | "demo", boolean>;
 
 /** Browser client for /api/beta. The session lives in an HttpOnly cookie. */
 export class BetaApiError extends Error {
@@ -31,7 +32,14 @@ export const betaApi = {
   identity: () => call<{ identity: IdentityCheck | null; banks: BankIdentity[] }>("GET", "identity"),
   bankIdentityStart: (bank: "tbc" | "bog") => call<{ url: string }>("POST", `bank-id/${bank}/start`, {}),
   verifyIdentity: (b: { mrz: string; liveness: { blink: boolean; turn: boolean; realScore?: number }; faceSimilarity: number }) => call<{ identity: IdentityCheck }>("POST", "identity", b),
-  signup: (b: { email: string; name: string; password: string }) => call<{ user: BetaUser }>("POST", "signup", b),
+  signup: (b: { email: string; name: string; password: string; role?: "freelancer" | "lender"; org?: string }) => call<{ user: BetaUser }>("POST", "signup", b),
+  lenders: () => call<{ id: string; org: string }[]>("GET", "lenders"),
+  shares: () => call<{ shares: LenderShare[]; decisions: LenderDecision[]; audit: AuditEvent[] }>("GET", "shares"),
+  share: (lenderId: string) => call<{ shareId: string }>("POST", "shares", { lenderId }),
+  revokeShare: (id: string) => call("POST", `shares/${id}/revoke`, {}),
+  applicants: () => call<ApplicantSummary[]>("GET", "lender/applicants"),
+  report: (id: string) => call<LenderReport>("GET", `lender/applicants/${id}`),
+  decide: (id: string, b: { decision: DecisionKind; amountUsd?: number | null; note?: string }) => call("POST", `lender/applicants/${id}/decision`, b),
   login: (b: { email: string; password: string }) => call<{ user: BetaUser }>("POST", "login", b),
   logout: () => call("POST", "logout", {}),
   connections: () => call<BetaConnection[]>("GET", "connections"),

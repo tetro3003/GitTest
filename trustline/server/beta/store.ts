@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { BetaConnection, BetaScore, BetaUser, ConnectionStatus, IdentityCheck, PaymentFact, ProviderId, TimelineActor, TimelineEntry, TimelineLevel, WorkFact } from "@/lib/beta/types";
+import type { AuditEvent, BetaConnection, BetaScore, BetaUser, ConnectionStatus, IdentityCheck, LenderDecision, LenderShare, PaymentFact, UserRole, ProviderId, TimelineActor, TimelineEntry, TimelineLevel, WorkFact } from "@/lib/beta/types";
 import { newId, newToken, sha256 } from "./auth";
 import { migrateBeta } from "./schema";
 
@@ -47,17 +47,65 @@ export function createBetaStore(db: Database.Database) {
 
   const store = {
     /* ----- users & sessions ----- */
-    createUser(u: { email: string; name: string; passwordHash: string }): BetaUser {
-      const user = { id: newId("usr"), email: u.email.toLowerCase(), name: u.name, createdAt: now() };
-      db.prepare("INSERT INTO beta_users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.name, u.passwordHash, user.createdAt);
+    createUser(u: { email: string; name: string; passwordHash: string; role?: UserRole; org?: string | null }): BetaUser {
+      const user: BetaUser = { id: newId("usr"), email: u.email.toLowerCase(), name: u.name, createdAt: now(), role: u.role ?? "freelancer", org: u.org ?? null };
+      db.prepare("INSERT INTO beta_users (id, email, name, password_hash, created_at, role, org) VALUES (?, ?, ?, ?, ?, ?, ?)").run(user.id, user.email, user.name, u.passwordHash, user.createdAt, user.role, user.org);
       return user;
     },
     userByEmail(email: string): (BetaUser & { passwordHash: string }) | null {
-      const r = db.prepare("SELECT id, email, name, password_hash AS passwordHash, created_at AS createdAt FROM beta_users WHERE email = ?").get(email.toLowerCase()) as (BetaUser & { passwordHash: string }) | undefined;
+      const r = db.prepare("SELECT id, email, name, password_hash AS passwordHash, created_at AS createdAt, role, org FROM beta_users WHERE email = ?").get(email.toLowerCase()) as (BetaUser & { passwordHash: string }) | undefined;
       return r ?? null;
     },
     user(id: string): BetaUser | null {
-      return (db.prepare("SELECT id, email, name, created_at AS createdAt FROM beta_users WHERE id = ?").get(id) as BetaUser | undefined) ?? null;
+      return (db.prepare("SELECT id, email, name, created_at AS createdAt, role, org FROM beta_users WHERE id = ?").get(id) as BetaUser | undefined) ?? null;
+    },
+    lenders(): { id: string; org: string }[] {
+      return db.prepare("SELECT id, COALESCE(org, name) AS org FROM beta_users WHERE role = 'lender' ORDER BY org").all() as { id: string; org: string }[];
+    },
+
+    /* ----- sharing with lenders, decisions, audit ----- */
+    createShare(userId: string, lenderId: string): string {
+      const id = newId("shr");
+      db.prepare("INSERT INTO beta_shares (id, user_id, lender_id, created_at) VALUES (?, ?, ?, ?)").run(id, userId, lenderId, now());
+      return id;
+    },
+    revokeShare(userId: string, shareId: string): { lenderId: string } | null {
+      const r = db.prepare("SELECT lender_id FROM beta_shares WHERE id = ? AND user_id = ? AND revoked_at IS NULL").get(shareId, userId) as { lender_id: string } | undefined;
+      if (!r) return null;
+      db.prepare("UPDATE beta_shares SET revoked_at = ? WHERE id = ?").run(now(), shareId);
+      return { lenderId: r.lender_id };
+    },
+    sharesOf(userId: string): LenderShare[] {
+      return db
+        .prepare("SELECT s.id, s.lender_id AS lenderId, COALESCE(u.org, u.name) AS lenderOrg, s.created_at AS createdAt, s.revoked_at AS revokedAt FROM beta_shares s JOIN beta_users u ON u.id = s.lender_id WHERE s.user_id = ? ORDER BY s.created_at DESC")
+        .all(userId) as LenderShare[];
+    },
+    activeShare(userId: string, lenderId: string): { id: string; createdAt: string } | null {
+      return (db.prepare("SELECT id, created_at AS createdAt FROM beta_shares WHERE user_id = ? AND lender_id = ? AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1").get(userId, lenderId) as { id: string; createdAt: string } | undefined) ?? null;
+    },
+    applicantsOf(lenderId: string): { userId: string; name: string; email: string; sharedAt: string }[] {
+      return db
+        .prepare("SELECT s.user_id AS userId, u.name, u.email, MAX(s.created_at) AS sharedAt FROM beta_shares s JOIN beta_users u ON u.id = s.user_id WHERE s.lender_id = ? AND s.revoked_at IS NULL GROUP BY s.user_id ORDER BY sharedAt DESC")
+        .all(lenderId) as { userId: string; name: string; email: string; sharedAt: string }[];
+    },
+    addDecision(d: Omit<LenderDecision, "id" | "createdAt" | "lenderOrg">): string {
+      const id = newId("dec");
+      db.prepare("INSERT INTO beta_decisions (id, user_id, lender_id, officer, decision, amount_usd, note, recommendation, score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(id, d.applicantId, d.lenderId, d.officer, d.decision, d.amountUsd, d.note, d.recommendation, d.score, now());
+      return id;
+    },
+    decisions(where: { userId?: string; lenderId?: string }): LenderDecision[] {
+      const cond = [where.userId ? "d.user_id = @userId" : null, where.lenderId ? "d.lender_id = @lenderId" : null].filter(Boolean).join(" AND ") || "1";
+      return db
+        .prepare(`SELECT d.id, d.user_id AS applicantId, d.lender_id AS lenderId, COALESCE(u.org, u.name) AS lenderOrg, d.officer, d.decision, d.amount_usd AS amountUsd, d.note, d.recommendation, d.score, d.created_at AS createdAt FROM beta_decisions d JOIN beta_users u ON u.id = d.lender_id WHERE ${cond} ORDER BY d.created_at DESC`)
+        .all({ userId: where.userId, lenderId: where.lenderId }) as LenderDecision[];
+    },
+    audit(e: { userId: string; lenderId: string | null; actor: string; action: string; detail?: string | null }) {
+      db.prepare("INSERT INTO beta_audit (user_id, lender_id, at, actor, action, detail) VALUES (?, ?, ?, ?, ?, ?)").run(e.userId, e.lenderId, now(), e.actor, e.action, e.detail ?? null);
+    },
+    auditTrail(userId: string, lenderId?: string): AuditEvent[] {
+      return db
+        .prepare(`SELECT id, at, actor, action, detail FROM beta_audit WHERE user_id = ? ${lenderId ? "AND (lender_id = ? OR lender_id IS NULL)" : ""} ORDER BY id DESC LIMIT 100`)
+        .all(...(lenderId ? [userId, lenderId] : [userId])) as AuditEvent[];
     },
     createSession(userId: string): string {
       const token = newToken();

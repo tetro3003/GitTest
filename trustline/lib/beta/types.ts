@@ -21,11 +21,84 @@ export type ConnectionStatus = "needs_setup" | "syncing" | "ok" | "error";
 
 export type ChainFamily = "evm" | "solana" | "tron";
 
+export type UserRole = "freelancer" | "lender";
+
 export interface BetaUser {
   id: string;
   email: string;
   name: string;
   createdAt: string;
+  role: UserRole;
+  /** Lenders: the bank or company the officer works for. */
+  org: string | null;
+}
+
+/** A freelancer's consent for one lender to see their report. */
+export interface LenderShare {
+  id: string;
+  lenderId: string;
+  lenderOrg: string;
+  createdAt: string;
+  revokedAt: string | null;
+}
+
+export type DecisionKind = "approve" | "decline" | "request_info";
+
+/** The human decision a lender's officer made, with what the system had suggested. */
+export interface LenderDecision {
+  id: string;
+  applicantId: string;
+  lenderId: string;
+  lenderOrg: string;
+  officer: string;
+  decision: DecisionKind;
+  amountUsd: number | null;
+  note: string;
+  recommendation: string;
+  score: number | null;
+  createdAt: string;
+}
+
+export interface AuditEvent {
+  id: number;
+  at: string;
+  actor: string;
+  action: string;
+  detail: string | null;
+}
+
+export interface Recommendation {
+  action: "approve" | "review" | "decline";
+  maxMonthlyPayment: number;
+  why: string[];
+}
+
+export interface ApplicantSummary {
+  applicantId: string;
+  name: string;
+  sharedAt: string;
+  score: number | null;
+  band: string | null;
+  verifiedMonthlyIncome: number;
+  flags: number;
+  lastDecision: LenderDecision | null;
+}
+
+export interface LenderReport {
+  applicant: { id: string; name: string; email: string };
+  sharedAt: string;
+  score: BetaScore;
+  recommendation: Recommendation;
+  explanation: { text: string; by: "claude" | "rules"; note: string | null };
+  payments: PaymentFact[];
+  work: WorkFact[];
+  identity: IdentityCheck | null;
+  banks: BankIdentity[];
+  sources: { provider: string; label: string; lastSyncAt: string | null }[];
+  /** How long building this report took, measured on the server. */
+  generatedMs: number;
+  decisions: LenderDecision[];
+  audit: AuditEvent[];
 }
 
 export interface BetaConnection {

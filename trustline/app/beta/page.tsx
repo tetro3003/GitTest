@@ -6,6 +6,8 @@ import { AuthForm } from "@/components/beta/auth-form";
 import { FigmaCard } from "@/components/beta/figma-card";
 import { BankIdCard } from "@/components/beta/bank-id-card";
 import { IdCheckCard } from "@/components/beta/id-check";
+import { LenderHome } from "@/components/beta/lender-home";
+import { ShareCard } from "@/components/beta/share-card";
 import { MONEY_SOURCES, SourceCard, WORK_SOURCES } from "@/components/beta/source-card";
 import { PaymentsTable } from "@/components/beta/payments-table";
 import { WorkTable } from "@/components/beta/work-table";
@@ -61,8 +63,10 @@ export default function BetaHome() {
     }
   }, []);
 
+  const [tick, setTick] = useState(0);
   const changed = useCallback(() => {
     fastUntil.current = Date.now() + 20_000;
+    setTick((t) => t + 1);
     void refresh();
   }, [refresh]);
 
@@ -102,6 +106,29 @@ export default function BetaHome() {
   const figma = connections.find((c) => c.provider === "figma") ?? null;
   const wallets = connections.filter((c) => c.provider === "wallet");
   const onError = (text: string) => setNotice({ kind: "error", text });
+  const logout = async () => {
+    await betaApi.logout();
+    setMe(null);
+    setTimeline([]);
+    lastId.current = 0;
+  };
+  const noticeBox = notice && (
+    <div role={notice.kind === "error" ? "alert" : "status"} className={`beta-in flex items-start justify-between gap-3 rounded-2xl p-3 text-sm ${notice.kind === "error" ? "bg-risk-soft text-risk" : "bg-brand-soft text-brand-strong"}`}>
+      <span>{notice.text}</span>
+      <button onClick={() => setNotice(null)} aria-label="Dismiss"><X className="size-4" /></button>
+    </div>
+  );
+
+  if (me.user.role === "lender")
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" className="rounded-xl" onClick={logout}><LogOut /> Log out</Button>
+        </div>
+        {noticeBox}
+        <LenderHome me={me.user} onError={onError} />
+      </div>
+    );
 
   return (
     <div className="space-y-6">
@@ -110,17 +137,12 @@ export default function BetaHome() {
           <p className="text-sm font-medium text-muted-foreground">Welcome back</p>
           <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Hi {me.user.name.split(" ")[0]} <span aria-hidden>👋</span></h1>
         </div>
-        <Button variant="ghost" size="sm" className="rounded-xl" onClick={async () => { await betaApi.logout(); setMe(null); setTimeline([]); lastId.current = 0; }}>
+        <Button variant="ghost" size="sm" className="rounded-xl" onClick={logout}>
           <LogOut /> Log out
         </Button>
       </div>
 
-      {notice && (
-        <div role={notice.kind === "error" ? "alert" : "status"} className={`beta-in flex items-start justify-between gap-3 rounded-2xl p-3 text-sm ${notice.kind === "error" ? "bg-risk-soft text-risk" : "bg-brand-soft text-brand-strong"}`}>
-          <span>{notice.text}</span>
-          <button onClick={() => setNotice(null)} aria-label="Dismiss"><X className="size-4" /></button>
-        </div>
-      )}
+      {noticeBox}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         <div className="space-y-6">
@@ -145,6 +167,10 @@ export default function BetaHome() {
             <h2 id="id-h" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proof of identity</h2>
             <BankIdCard banks={bankIds} setup={me.setup} onError={onError} />
             <IdCheckCard identity={identity} onChange={changed} />
+          </section>
+          <section aria-labelledby="share-h" className="space-y-3">
+            <h2 id="share-h" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Apply for credit</h2>
+            <ShareCard onChange={changed} onError={onError} refreshKey={tick} />
           </section>
         </div>
 
