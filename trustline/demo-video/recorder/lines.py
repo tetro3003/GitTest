@@ -1,6 +1,6 @@
 import os
 # With ANTHROPIC_API_KEY set, the officer's explanation is written by Claude; otherwise by the labelled rule-based fallback.
-CLAUDE = bool(os.environ.get("ANTHROPIC_API_KEY"))
+CLAUDE = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("TRUSTLINE_ANTHROPIC_KEY"))
 
 # id: (caption shown on screen, or None for a title card; voiceover)
 L = {

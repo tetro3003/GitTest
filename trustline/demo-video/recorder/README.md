@@ -17,8 +17,9 @@ Also needs `ffmpeg`, and Chromium (set `CHROME_PATH` if it isn't at `/opt/pw-bro
 ## Record
 
 ```bash
-# 1. Fresh demo server (from trustline/). Add ANTHROPIC_API_KEY to use Claude for the officer's explanation.
-rm -f data/demo.db* && DEMO_MODE=1 TRUSTLINE_DB_PATH=data/demo.db npx next dev --turbopack -p 3100
+# 1. Fresh demo server (from trustline/). With a key, Claude writes the officer's explanation.
+#    In a cloud environment, store the key as TRUSTLINE_ANTHROPIC_KEY (ANTHROPIC_API_KEY is reserved there).
+rm -f data/demo.db* && ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-$TRUSTLINE_ANTHROPIC_KEY}" DEMO_MODE=1 TRUSTLINE_DB_PATH=data/demo.db npx next dev --turbopack -p 3100
 
 # 2. In demo-video/recorder/ (same ANTHROPIC_API_KEY setting, so the narration matches the screen)
 python3 gen.py                  # voice clips + lines.json
